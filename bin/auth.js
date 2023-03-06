@@ -6,11 +6,11 @@ import jwt from "jsonwebtoken"; //TODO: create and import long secret
 const saltRounds = 10;
 
 //jwt config
-const TOKEN = "testTOKEN1234"
+const TOKEN = "jwtTOKEN2023"
 
 function createNewUser(user, pw) {
     return new Promise(async (res, rej) => {
-        if (!global.USERS.find({ user }).length) {
+        if (!global.USERS.findOne({ user })) {
             global.USERS.insertOne({ user, hash: await hash(pw, saltRounds) });
             res({ error: false, msg: "user created" });
         } else {
@@ -21,27 +21,43 @@ function createNewUser(user, pw) {
 
 function checkUserPw(user, pw) {
     return new Promise(async (res, rej) => {
-        let target = global.USERS.find({ user })[0];
+        let target = global.USERS.findOne({ user });
         if (target && await compare(pw, target.hash)) {
-            jwt.sign({ user: target.user }, TOKEN, { expiresIn: '7d' }, function (err, token) {
-                if (err) {
-                    console.error(new Error("cannot sign jwt token"));
-                    res({ error: true, msg: "something went wrong" });
-                    return;
-                }
-                res({ error: false, msg: "user and password correct", payload: {user: target, token} });
-            });
+            let {payload: { token }} = await createJWT(target.user);
+            res({ error: false, msg: "user and password correct", payload: {user: target, token} });
         } else {
             res({ error: true, msg: "user or password incorrect" });
         }
     });
 }
 
+function createJWT(user) {
+    return new Promise(async (res, rej) => {
+        let target = global.USERS.findOne({ user });
+        if (target) {
+            delete target.hash;
+            jwt.sign({ user: target }, TOKEN, { expiresIn: '7d' }, function (err, token) {
+                if (err) {
+                    console.error(new Error("cannot sign jwt token"));
+                    res({ error: true, msg: "something went wrong", payload: { token: null } });
+                    return;
+                }
+                res({ error: false, msg: "jwt token created", payload: { token } });
+            });
+        } else {
+            res({ error: true, msg: "user not found", payload: { token: null }  });
+        }
+    });
+}
+
 function checkJWT(tk) {
     return new Promise(async (res, rej) => {
-        jwt.verify(tk, TOKEN, function (err, decoded) {
-            if(err && !decoded) res({ error: true, msg: "JWT invalid or expired"})
-            else res({ error: false, msg: "JWT valid", payload: decoded})
+        jwt.verify(tk, TOKEN, async function (err, decoded) {
+            if (err && !decoded) res({ error: true, msg: "JWT invalid or expired" })
+            else {
+                let {payload: { token }} = await createJWT(decoded.user.user);
+                res({ error: false, msg: "JWT valid", payload: {user: decoded.user, newToken: token} });
+            }
         });
     });
 }
@@ -51,8 +67,8 @@ async function isAuth(socket, data, cb) {
     let cookies = raw ? cookie.parse(raw) : null;
 
     //if token is not present or invalid -> show login page and prevent cb function
-    if (!cookies || cookies?.token || !(await checkJWT(cookie.token)).error) {
-        socket.emit("goto:login");
+    if (!cookies || cookies?.token || (await checkJWT(cookie.token)).error) {
+        socket.emit("goto:login", {error: true, msg: "access denied"});
         return;
     }
 
@@ -62,6 +78,7 @@ async function isAuth(socket, data, cb) {
 export {
     createNewUser,
     checkUserPw,
+    createJWT,
     checkJWT,
     isAuth
 }

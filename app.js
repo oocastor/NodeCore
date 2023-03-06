@@ -7,13 +7,23 @@ io.on("connect", (socket) => {
 
     socket.on("auth:pw", async (data, ack) => {
         let {user,pw} = data;
-        let {err, msg, payload} = await checkUserPw(user, pw);
+        let {error, msg, payload} = await checkUserPw(user, pw);
 
         //wrong user or pw -> show login page with msg
-        if(err) socket.emit("goto:login", {msg})
+        if(error) socket.emit("goto:login", {msg})
         else {
-            //run ack and set header
-            ack(err);
+            //run ack, send jwt token to client
+            ack({error, token: payload.token});
+        }
+    });
+
+    socket.on("auth:token", async (data) => {
+        let {token} = data;
+        let {error, msg, payload} = await checkJWT(token);
+        if(error) socket.emit("goto:login", {msg})
+        else {
+            //run ack, send new jwt token to client
+            ack({error, token: payload.newToken});
         }
     });
 
@@ -27,7 +37,7 @@ io.on("connect", (socket) => {
 // checkUserPw("test", "test").then((res) => {
 //     console.log(res);
 //     if(res.error) return;
-//     (async(res) => {
+//     setTimeout(async(res) => {
 //         console.log((await checkJWT(res.payload.token)))
-//     })(res);
+//     }, 1000, res);
 // });
