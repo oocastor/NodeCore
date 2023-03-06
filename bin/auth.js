@@ -8,10 +8,10 @@ const saltRounds = 10;
 //jwt config
 const TOKEN = "testTOKEN1234"
 
-function createNewUser(us, pw) {
+function createNewUser(user, pw) {
     return new Promise(async (res, rej) => {
-        if (!global.USERS.find({ us }).length) {
-            global.USERS.insertOne({ user: us, hash: await hash(pw, saltRounds) });
+        if (!global.USERS.find({ user }).length) {
+            global.USERS.insertOne({ user, hash: await hash(pw, saltRounds) });
             res({ error: false, msg: "user created" });
         } else {
             res({ error: true, msg: "user already exist" });
@@ -19,17 +19,17 @@ function createNewUser(us, pw) {
     });
 }
 
-function checkUserPw(us, pw) {
+function checkUserPw(user, pw) {
     return new Promise(async (res, rej) => {
-        let target = global.USERS.find({ user: us })[0];
+        let target = global.USERS.find({ user })[0];
         if (target && await compare(pw, target.hash)) {
             jwt.sign({ user: target.user }, TOKEN, { expiresIn: '7d' }, function (err, token) {
                 if (err) {
                     console.error(new Error("cannot sign jwt token"));
-                    res({ error: true, msg: "something went wrong :(" });
+                    res({ error: true, msg: "something went wrong" });
                     return;
                 }
-                res({ error: false, msg: "user and password correct", payload: token });
+                res({ error: false, msg: "user and password correct", payload: {user: target, token} });
             });
         } else {
             res({ error: true, msg: "user or password incorrect" });
@@ -55,8 +55,6 @@ async function isAuth(socket, data, cb) {
         socket.emit("goto:login");
         return;
     }
-
-    //TODO: replace with new one, to renew expiration date
 
     cb(data);
 }
