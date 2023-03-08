@@ -6,6 +6,7 @@ io.on("connect", (socket) => {
     console.log(socket.id);
 
     socket.on("auth:pw", async (data, ack) => {
+        console.log(data);
         let {user,pw} = data;
         let {error, msg, payload} = await checkUserPw(user, pw);
 
@@ -13,17 +14,17 @@ io.on("connect", (socket) => {
         if(error) socket.emit("goto:login", {msg})
         else {
             //run ack, send jwt token to client
-            ack({error, token: payload.token});
+            ack({token: payload.token});
         }
     });
 
-    socket.on("auth:token", async (data) => {
+    socket.on("auth:token", async (data, ack) => {
         let {token} = data;
         let {error, msg, payload} = await checkJWT(token);
         if(error) socket.emit("goto:login", {msg})
         else {
             //run ack, send new jwt token to client
-            ack({error, token: payload.newToken});
+            ack({token: payload.newToken});
         }
     });
 

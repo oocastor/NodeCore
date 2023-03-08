@@ -22,6 +22,7 @@ function createNewUser(user, pw) {
 function checkUserPw(user, pw) {
     return new Promise(async (res, rej) => {
         let target = global.USERS.findOne({ user });
+        console.log(target);
         if (target && await compare(pw, target.hash)) {
             let {payload: { token }} = await createJWT(target.user);
             res({ error: false, msg: "user and password correct", payload: {user: target, token} });
@@ -35,8 +36,7 @@ function createJWT(user) {
     return new Promise(async (res, rej) => {
         let target = global.USERS.findOne({ user });
         if (target) {
-            delete target.hash;
-            jwt.sign({ user: target }, TOKEN, { expiresIn: '7d' }, function (err, token) {
+            jwt.sign({ user: {user: target.user, _id: target._id} }, TOKEN, { expiresIn: '7d' }, function (err, token) {
                 if (err) {
                     console.error(new Error("cannot sign jwt token"));
                     res({ error: true, msg: "something went wrong", payload: { token: null } });
@@ -68,7 +68,7 @@ async function isAuth(socket, data, cb) {
 
     //if token is not present or invalid -> show login page and prevent cb function
     if (!cookies || cookies?.token || (await checkJWT(cookie.token)).error) {
-        socket.emit("goto:login", {error: true, msg: "access denied"});
+        socket.emit("goto:login", {msg: "access denied"});
         return;
     }
 
