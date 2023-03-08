@@ -15,10 +15,13 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
     "node-json-db": "^2.1.4",
+    "node-rsa": "^1.1.1",
     "socket.io": "^4.6.1"
   },
   "type": "module",
   "nodemonConfig": {
-      "ignore": ["data/*"]
+    "ignore": [
+      "data/*"
+    ]
   }
 }

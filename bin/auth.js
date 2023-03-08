@@ -1,12 +1,19 @@
 import cookie from "cookie";
 import { hash, compare } from "bcrypt";
 import jwt from "jsonwebtoken"; //TODO: create and import long secret
+import RSA from "node-rsa";
 
 //bcrypt config
 const saltRounds = 10;
 
 //jwt config
-const TOKEN = "jwtTOKEN2023"
+const keys = new RSA(global.STORAGE.findOne({ entity: "privateKey" })?.value || generateKeyPair());
+
+function generateKeyPair () {
+    let _key = new RSA({b: 1024}).exportKey();
+    global.STORAGE.insertOne({ entity: "privateKey", value: _key});
+    return _key;
+}
 
 function createNewUser(user, pw) {
     return new Promise(async (res, rej) => {
@@ -36,8 +43,9 @@ function createJWT(user) {
     return new Promise(async (res, rej) => {
         let target = global.USERS.findOne({ user });
         if (target) {
-            jwt.sign({ user: {user: target.user, _id: target._id} }, TOKEN, { expiresIn: '7d' }, function (err, token) {
+            jwt.sign({ user: {user: target.user, _id: target._id} }, keys.exportKey(), { algorithm: 'RS256', expiresIn: '7d' }, function (err, token) {
                 if (err) {
+                    console.log(err);
                     console.error(new Error("cannot sign jwt token"));
                     res({ error: true, msg: "something went wrong", payload: { token: null } });
                     return;
@@ -52,7 +60,7 @@ function createJWT(user) {
 
 function checkJWT(tk) {
     return new Promise(async (res, rej) => {
-        jwt.verify(tk, TOKEN, async function (err, decoded) {
+        jwt.verify(tk, keys.exportKey(), async function (err, decoded) {
             if (err && !decoded) res({ error: true, msg: "JWT invalid or expired" })
             else {
                 let {payload: { token }} = await createJWT(decoded.user.user);

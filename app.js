@@ -33,12 +33,10 @@ io.on("connect", (socket) => {
     }));
 });
 
-// createNewUser("test", "test");
-
-// checkUserPw("test", "test").then((res) => {
-//     console.log(res);
-//     if(res.error) return;
-//     setTimeout(async(res) => {
-//         console.log((await checkJWT(res.payload.token)))
-//     }, 1000, res);
-// });
+checkUserPw("test", "test").then((res) => {
+    console.log(res);
+    if(res.error) return;
+    setTimeout(async(res) => {
+        console.log((await checkJWT(res.payload.token)))
+    }, 1000, res);
+});
