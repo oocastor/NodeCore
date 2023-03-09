@@ -32,9 +32,9 @@ function checkUserPw(user, pw) {
         console.log(target);
         if (target && await compare(pw, target.hash)) {
             let {payload: { token }} = await createJWT(target.user);
-            res({ error: false, msg: "user and password correct", payload: {user: target, token} });
+            res({ error: false, msg: "User and password correct", payload: {user: target, token} });
         } else {
-            res({ error: true, msg: "user or password incorrect" });
+            res({ error: true, msg: "User or password incorrect" });
         }
     });
 }
@@ -47,13 +47,13 @@ function createJWT(user) {
                 if (err) {
                     console.log(err);
                     console.error(new Error("cannot sign jwt token"));
-                    res({ error: true, msg: "something went wrong", payload: { token: null } });
+                    res({ error: true, msg: "Something went wrong", payload: { token: null } });
                     return;
                 }
-                res({ error: false, msg: "jwt token created", payload: { token } });
+                res({ error: false, msg: "JWT token created", payload: { token } });
             });
         } else {
-            res({ error: true, msg: "user not found", payload: { token: null }  });
+            res({ error: true, msg: "User not found", payload: { token: null }  });
         }
     });
 }
@@ -61,7 +61,7 @@ function createJWT(user) {
 function checkJWT(tk) {
     return new Promise(async (res, rej) => {
         jwt.verify(tk, keys.exportKey(), async function (err, decoded) {
-            if (err && !decoded) res({ error: true, msg: "JWT invalid or expired" })
+            if (err && !decoded) res({ error: true, msg: "Token invalid or expired" })
             else {
                 let {payload: { token }} = await createJWT(decoded.user.user);
                 res({ error: false, msg: "JWT valid", payload: {user: decoded.user, newToken: token} });
@@ -76,7 +76,7 @@ async function isAuth(socket, data, cb) {
 
     //if token is not present or invalid -> show login page and prevent cb function
     if (!cookies || cookies?.token || (await checkJWT(cookie.token)).error) {
-        socket.emit("goto:login", {msg: "access denied"});
+        socket.emit("goto:login", {msg: "Access denied"});
         return;
     }
 
