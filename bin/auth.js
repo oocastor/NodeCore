@@ -45,8 +45,7 @@ function createJWT(user) {
         if (target) {
             jwt.sign({ user: {user: target.user, _id: target._id} }, keys.exportKey(), { algorithm: 'RS256', expiresIn: '7d' }, function (err, token) {
                 if (err) {
-                    console.log(err);
-                    console.error(new Error("cannot sign jwt token"));
+                    console.error(err);
                     res({ error: true, msg: "Something went wrong", payload: { token: null } });
                     return;
                 }
