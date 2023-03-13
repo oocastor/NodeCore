@@ -3,6 +3,6 @@
 <script>
     let socket = io();
     socket.on("goto:login", () => console.log("!"));
-    socket.emit("get:secret-data");
+    socket.emit("auth:pw", {user: "test", pw: "test"}, () => socket.emit("get:secret-data"));
 </script>
 </html>

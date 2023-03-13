@@ -70,16 +70,18 @@ function checkJWT(tk) {
 }
 
 async function isAuth(socket, data, cb) {
-    let raw = socket.handshake.headers.cookie;
+    let raw = socket.request.headers.cookie;
     let cookies = raw ? cookie.parse(raw) : null;
 
-    //if token is not present or invalid -> show login page and prevent cb function
-    if (!cookies || cookies?.token || (await checkJWT(cookie.token)).error) {
-        socket.emit("goto:login", {msg: "Access denied"});
-        return;
-    }
+    console.log(raw)
 
-    cb(data);
+    // //if token is not present or invalid -> show login page and prevent cb function
+    // if ((await checkJWT(cookies.token)).error) {
+    //     socket.emit("goto:login", {msg: "Access denied"});
+    //     return;
+    // }
+
+    // cb(data);
 }
 
 export {

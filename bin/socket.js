@@ -4,7 +4,8 @@ import { isAuth, checkUserPw, checkJWT, createNewUser } from "./auth.js";
 
 const io = new Server(https, {
     cors: {
-        origin: ["http://localhost:8080"]
+        origin: ["http://localhost:8080"],
+        credentials: true,
     }
 });
 
@@ -12,7 +13,6 @@ io.on("connect", (socket) => {
     console.log(socket.id);
 
     socket.on("auth:pw", async (data, ack) => {
-        console.log(data);
         let {user,pw} = data;
         let {error, msg, payload} = await checkUserPw(user, pw);
 
@@ -20,7 +20,7 @@ io.on("connect", (socket) => {
         if(error) socket.emit("goto:login", {msg})
         else {
             //run ack, send jwt token to client
-            ack({token: payload.token});
+            ack(payload.token);
         }
     });
 
@@ -30,7 +30,7 @@ io.on("connect", (socket) => {
         if(error) socket.emit("goto:login", {msg})
         else {
             //run ack, send new jwt token to client
-            ack({token: payload.newToken});
+            ack(payload.newToken);
         }
     });
 
