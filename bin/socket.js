@@ -1,6 +1,9 @@
 import {https} from "./web.js";
 import {Server} from "socket.io";
-import { isAuth, checkUserPw, checkJWT, createNewUser } from "./auth.js";
+import { checkUserPw, checkJWT } from "./auth.js";
+import {EventEmitter} from "events";
+
+const se = new EventEmitter();
 
 const io = new Server(https, {
     cors: {
@@ -19,6 +22,8 @@ io.on("connect", (socket) => {
         //wrong user or pw -> show login page with msg
         if(error) socket.emit("goto:login", {msg})
         else {
+            //add socket to authed room
+            socket.join("authed");
             //run ack, send jwt token to client
             ack(payload.token);
         }
@@ -29,15 +34,17 @@ io.on("connect", (socket) => {
         let {error, msg, payload} = await checkJWT(token);
         if(error) socket.emit("goto:login", {msg})
         else {
+            //add socket to authed room
+            socket.join("authed");
             //run ack, send new jwt token to client
             ack(payload.newToken);
         }
     });
 
-    //example: endpoint with auth
-    socket.on("get:secret-data", (data) => isAuth(socket, data, () => {
-        console.log(socket.id + " knows the secret now!")
-    }));
+    socket.onAny((event, args) => {
+        if(socket.rooms.has("authed")) se.emit(event, args)
+        else socket.emit("goto:login", {msg: "Access denied"});
+    });
 });
 
-global.IO = io;
+global.SE = se;

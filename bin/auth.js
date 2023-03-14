@@ -29,7 +29,6 @@ function createNewUser(user, pw) {
 function checkUserPw(user, pw) {
     return new Promise(async (res, rej) => {
         let target = global.USERS.findOne({ user });
-        console.log(target);
         if (target && await compare(pw, target.hash)) {
             let {payload: { token }} = await createJWT(target.user);
             res({ error: false, msg: "User and password correct", payload: {user: target, token} });
@@ -69,25 +68,9 @@ function checkJWT(tk) {
     });
 }
 
-async function isAuth(socket, data, cb) {
-    let raw = socket.request.headers.cookie;
-    let cookies = raw ? cookie.parse(raw) : null;
-
-    console.log(raw)
-
-    // //if token is not present or invalid -> show login page and prevent cb function
-    // if ((await checkJWT(cookies.token)).error) {
-    //     socket.emit("goto:login", {msg: "Access denied"});
-    //     return;
-    // }
-
-    // cb(data);
-}
-
 export {
     createNewUser,
     checkUserPw,
     createJWT,
-    checkJWT,
-    isAuth
+    checkJWT
 }
