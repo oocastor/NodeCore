@@ -41,8 +41,8 @@ io.on("connect", (socket) => {
         }
     });
 
-    socket.onAny((event, args) => {
-        if(socket.rooms.has("authed")) se.emit(event, args)
+    socket.onAny((event, ...args) => {
+        if(socket.rooms.has("authed")) se.emit(event, ...args)
         else socket.emit("goto:login", {msg: "Access denied"});
     });
 });

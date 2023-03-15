@@ -1,22 +1,25 @@
-import { portIsUnused, domainIsUnused } from "../wrapper/entities.js";
+import { portIsUnused, domainIsUnused, nameIsUnused } from "../wrapper/entities.js";
 
-global.SE.on("redirect:create", (data, ack) => {
-    let { name, domain, port } = data;
-    if (!data || !data.name || !data.domain || !data.port) {
+global.SE.on("redirect:create", async (data, ack) => {
+    if (!data?.name || !data?.network?.sub || !data?.network?.domain || !data?.network?.port) {
         ack({ error: true, msg: "Input data incomplete" });
         return;
     }
-    if (portIsUnused(port)) {
-        if (domainIsUnused(domain)) {
-            //port and domain unused
-            global.ENTITIES.insertOne({ type: "redirect", name, port, domain, active: true });
-            //TODO: reload proxy
-            ack({ error: false, msg: "Redirect successfully created" });
+    if (await nameIsUnused(data.name)) {
+        if (await portIsUnused(data.network.port)) {
+            if (await domainIsUnused(data.network.sub, data.network.domain)) {
+                //port and domain unused
+                global.ENTITIES.insertOne({ type: "redirect", ...data, active: true });
+                //TODO: reload proxy
+                ack({ error: false, msg: "Redirect successfully created" });
+            } else {
+                ack({ error: true, msg: "Domain already used" });
+            }
         } else {
-            ack({ error: true, msg: "Domain already used" });
+            ack({ error: true, msg: "Port already used" });
         }
     } else {
-        ack({ error: true, msg: "Port already used" });
+        ack({ error: true, msg: "Name already used" });
     }
 });
 
