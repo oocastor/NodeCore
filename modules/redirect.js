@@ -19,7 +19,7 @@ global.SE.on("redirect:write", async (data, ack) => {
             //insert new entity
             global.ENTITIES.insertOne({ type: "redirect", ...data });
             //TODO: reload proxy
-            ack({ error: false, msg: "Redirect successfully created" });
+            ack({ error: false, msg: `Redirect successfully ${!data._id ? "created" : "updated"}` });
             return;
         } else {
             ack({ error: true, msg: "Domain already used" });
