@@ -1,7 +1,7 @@
 import { domainIsUnused, nameIsUnused } from "../wrapper/entities.js";
 
 global.SE.on("redirect:write", async (data, ack) => {
-    if (!data?.name || !data?.network?.sub || !data?.network?.domain || !data?.network?.port || isNaN(!data?.network?.port)) {
+    if (data?.active != undefined || !data?.name || !data?.network?.sub || !data?.network?.domain || !data?.network?.port || isNaN(!data?.network?.port)) {
         ack({ error: true, msg: "Input data incomplete or invalid" });
         return;
     }
@@ -39,6 +39,11 @@ global.SE.on("redirect:list", (ack) => {
 });
 
 global.SE.on("redirect:delete", (data, ack) => {
+    if(!data?._id) {
+        ack({ error: true, msg: "Cannot delete redirect, no _id given.", payload: null });
+        return;
+    }
+
     let { _id } = data;
     global.ENTITIES.deleteOne({ _id });
     ack({ error: false, msg: "Redirect successfully deleted", payload: null });
