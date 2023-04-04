@@ -49,10 +49,33 @@ global.SE.on("instance:write", async (data, ack) => {
     if (target) global.ENTITIES.insertOne(target);
 });
 
+global.SE.on("instance:action", async (data, ack) => {
+    if(!data?._id || data?.status == undefined) {
+        ack({ error: true, msg: `Cannot execute instance action`, payload: null });
+        return;
+    }
+
+    let { _id, status } = data;
+    await global.ENTITIES.updateOne({ _id }, { status });
+
+    ack({ error: false, msg: "Instance action successfully executed", payload: null });
+});
+
+global.SE.on("instance:get", (data, ack) => {
+    if(!data?._id) {
+        ack({ error: true, msg: "Cannot get instance by id", payload: null });
+        return;
+    }
+
+    let { _id } = data;
+    let instance = global.ENTITIES.findOne({ type: "instance", _id });
+    ack({ error: false, msg: "Fetched instance entity", payload: instance });
+});
+
 global.SE.on("instance:list", (ack) => {
-    let redirects = global.ENTITIES.findMany({ type: "instance" });
-    redirects.sort((a, b) => a.name < b.name ? -1 : 1);
-    ack({ error: false, msg: "Fetched all instance entities", payload: redirects });
+    let instances = global.ENTITIES.findMany({ type: "instance" });
+    instances.sort((a, b) => a.name < b.name ? -1 : 1);
+    ack({ error: false, msg: "Fetched all instance entities", payload: instances });
 });
 
 global.SE.on("instance:delete", (data, ack) => {
