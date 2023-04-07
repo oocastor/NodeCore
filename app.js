@@ -1,3 +1,5 @@
+import "./bin/setup.js";
+
 import "./bin/database.js";
 import "./bin/socket.js";
 

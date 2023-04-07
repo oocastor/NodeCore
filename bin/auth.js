@@ -1,6 +1,6 @@
 import cookie from "cookie";
 import { hash, compare } from "bcrypt";
-import jwt from "jsonwebtoken"; //TODO: create and import long secret
+import jwt from "jsonwebtoken";
 import RSA from "node-rsa";
 
 //bcrypt config
