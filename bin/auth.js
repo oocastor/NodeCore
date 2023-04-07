@@ -26,6 +26,17 @@ function createNewUser(user, pw) {
     });
 }
 
+function deleteUser(_id) {
+    return new Promise(async (res, rej) => {
+        if (global.USERS.findOne({ _id })) {
+            global.USERS.deleteOne({ _id });
+            res({ error: false, msg: "user deleted" });
+        } else {
+            res({ error: true, msg: "user does not exist" });
+        }
+    });
+}
+
 function checkUserPw(user, pw) {
     return new Promise(async (res, rej) => {
         let target = global.USERS.findOne({ user });
@@ -70,6 +81,7 @@ function checkJWT(tk) {
 
 export {
     createNewUser,
+    deleteUser,
     checkUserPw,
     createJWT,
     checkJWT
