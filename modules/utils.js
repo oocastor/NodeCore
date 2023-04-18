@@ -1,6 +1,25 @@
 import { getUnusedPort } from "../wrapper/entities.js";
 import { deleteUser, createNewUser } from "../bin/auth.js";
 
+global.SE.on("path:get", async (ack) => {
+    let { value } = await global.CONFIG.findOne({ entity: "path" });
+    ack({ error: false, msg: "Path successfully fetched", payload: value });
+});
+
+global.SE.on("path:set", async (data, ack) => {
+    if(!data?.path) {
+        ack({ error: true, msg: "Cannot change path - input incomplete.", payload: null });
+        return;
+    }
+    if (await global.ENTITIES.findOne({ type: "instance" })) {
+        ack({ error: true, msg: "Cannot change path - there are already running intances!", payload: null });
+        return;
+    }
+    let { path } = data;
+    await global.CONFIG.updateOne({ entity: "path" }, { value: path });
+    ack({ error: false, msg: "Path successfully changed", payload: null });
+});
+
 global.SE.on("account:set", async (data, ack) => {
     if(!data?.user || !data?.pwd) {
         ack({ error: true, msg: "Cannot change login data - input incomplete.", payload: null });
