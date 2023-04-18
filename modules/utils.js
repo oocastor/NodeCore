@@ -1,4 +1,5 @@
 import { getUnusedPort } from "../wrapper/entities.js";
+import { getUserRepos } from "../wrapper/github.js";
 import { deleteUser, createNewUser } from "../bin/auth.js";
 
 global.SE.on("path:get", async (ack) => {
@@ -34,7 +35,7 @@ global.SE.on("account:set", async (data, ack) => {
 });
 
 global.SE.on("github:get", async (ack) => {
-    let { value } = await global.CONFIG.findOne({ entity: "github" });
+    let { value } = JSON.parse(JSON.stringify(await global.CONFIG.findOne({ entity: "github" }))); //deep copy element
     value.pat = value.pat && "hehe got u, no token to see here :P";
     ack({ error: false, msg: "Gihtub account data successfully fetched", payload: value });
 });
@@ -42,6 +43,15 @@ global.SE.on("github:get", async (ack) => {
 global.SE.on("github:set", async (data, ack) => {
     await global.CONFIG.updateOne({ entity: "github" }, { value: data });
     ack({ error: false, msg: "Github account data has been changed", payload: null });
+});
+
+global.SE.on("github:repos", async (ack) => {
+    let repos = await getUserRepos();
+    if(!repos.length) {
+        ack({ error: true, msg: "No github user repos found", payload: null });
+        return;
+    }
+    ack({ error: false, msg: "Github user repos fetched", payload: repos });
 });
 
 global.SE.on("domain:add", async (data, ack) => {

@@ -1,7 +1,7 @@
 import { domainIsUnused, nameIsUnused, portIsUnused } from "../wrapper/entities.js";
 
 global.SE.on("instance:write", async (data, ack) => {
-    if (data?.status == undefined || !data?.name || !data?.env || !data?.cmd || data?.network?.isAccessable == true && (!data?.network?.redirect?.sub
+    if (data?.status == undefined || !data?.name || !data?.env || !data?.cmd || !data?.git || data?.network?.isAccessable == true && (!data?.network?.redirect?.sub
         || !data?.network?.redirect?.domain || !data?.network?.redirect?.port || isNaN(!data?.network?.redirect?.port))) {
         ack({ error: true, msg: "Input data incomplete or invalid" });
         return;
