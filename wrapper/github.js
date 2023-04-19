@@ -10,7 +10,7 @@ async function getUserRepos() {
     let repos = [...(await octokit.request('GET /user/repos')).data].map(m => {
         return {
             name: m.name,
-            uri: m.git_url,
+            uri: m.clone_url,
             lang: m.language
         }
     });

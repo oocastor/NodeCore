@@ -1,4 +1,5 @@
 import { domainIsUnused, nameIsUnused, portIsUnused } from "../wrapper/entities.js";
+import { cloneRepo } from "../wrapper/git.js";
 
 global.SE.on("instance:write", async (data, ack) => {
     if (data?.status == undefined || !data?.name || !data?.env || !data?.cmd || !data?.git || data?.network?.isAccessable == true && (!data?.network?.redirect?.sub
@@ -7,11 +8,21 @@ global.SE.on("instance:write", async (data, ack) => {
         return;
     }
 
-    //delete old entity by _id
     let target;
     if (data?._id) {
+        //UPDATE
+
+        //delete old entity by _id
         target = global.ENTITIES.findOne({ _id: data._id });
         global.ENTITIES.deleteOne(target);
+    } else {
+        //CREATE
+        let clone = await cloneRepo(data.git, data.name);
+        console.log(clone);
+        if(clone.error) {
+            ack(clone);
+            return;
+        }
     }
 
     //name is unused
