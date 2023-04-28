@@ -1,8 +1,8 @@
 import SimpleGit from "simple-git";
 
-function cloneRepo(repo, name) {
+function cloneRepo(repo, dir) {
     return new Promise(async (res, rej) =>  {
-        let path = await global.CONFIG.findOne({ entity: "path" }).value;
+        let path = global.CONFIG.findOne({ entity: "path" }).value;
         let git = SimpleGit({baseDir: path, errors(err, result) {
             if(err) {
                 res({error: true, msg: "Cannot clone git repo", payload: null});
@@ -13,10 +13,33 @@ function cloneRepo(repo, name) {
                 return;
             }
         }});
-        await git.clone(repo.uri, name);
+        let github = await global.CONFIG.findOne({ entity: "github" }).value;
+        if(github.user == "" || github.pat == "") {
+            res({error: true, msg: "No github account credentials given", payload: null});
+            return;
+        }
+        await git.clone(`https://${github.pat}@${repo.uri.replace("https://", "")}`, dir);
+    });
+}
+
+function pullRepo(dir) {
+    return new Promise(async (res, rej) =>  {
+        let path = global.CONFIG.findOne({ entity: "path" }).value;
+        let git = SimpleGit({baseDir: `${path}/${dir}`, errors(err, result) {
+            if(err) {
+                res({error: true, msg: "Cannot update git repo", payload: null});
+                return;
+            }
+            if(result.exitCode === 0) {
+                res({error: false, msg: "Repo successfully updated", payload: null});
+                return;
+            }
+        }});
+        await git.pull();
     });
 }
 
 export {
-    cloneRepo
+    cloneRepo,
+    pullRepo
 }

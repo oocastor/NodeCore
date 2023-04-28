@@ -1,5 +1,5 @@
 import { domainIsUnused, nameIsUnused, portIsUnused } from "../wrapper/entities.js";
-import { cloneRepo } from "../wrapper/git.js";
+import { createInstance, deleteInstance, runInstanceAction } from "../wrapper/instance.js";
 
 global.SE.on("instance:write", async (data, ack) => {
     if (data?.status == undefined || !data?.name || !data?.env || !data?.cmd || !data?.git || data?.network?.isAccessable == true && (!data?.network?.redirect?.sub
@@ -10,40 +10,25 @@ global.SE.on("instance:write", async (data, ack) => {
 
     let target;
     if (data?._id) {
-        //UPDATE
-
         //delete old entity by _id
         target = global.ENTITIES.findOne({ _id: data._id });
         global.ENTITIES.deleteOne(target);
-    } else {
-        //CREATE
-        let clone = await cloneRepo(data.git, data.name);
-        console.log(clone);
-        if(clone.error) {
-            ack(clone);
-            return;
-        }
     }
 
     //name is unused
-    if (await nameIsUnused(data.name)) {
+    if (nameIsUnused(data.name)) {
         if (!data.network.isAccessable) {
             //clear network config for instance
             data.network.redirect.sub = "";
             data.network.redirect.domain = "";
             data.network.redirect.port = 0;
-            //insert new entity
-            global.ENTITIES.insertOne({ type: "instance", ...data });
-            //TODO: reload proxy
-            ack({ error: false, msg: `Instance successfully ${!data._id ? "created" : "updated"}` });
+
+            await createInstance(data, ack);
             return;
         } else {
-            if (await portIsUnused(data.network.redirect.port)) {
-                if (await domainIsUnused(data.network.redirect.sub, data.network.redirect.domain)) {
-                    //insert new entity
-                    global.ENTITIES.insertOne({ type: "instance", ...data });
-                    //TODO: reload proxy
-                    ack({ error: false, msg: `Instance successfully ${!data._id ? "created" : "updated"}` });
+            if (portIsUnused(data.network.redirect.port)) {
+                if (domainIsUnused(data.network.redirect.sub, data.network.redirect.domain)) {
+                    await createInstance(data, ack)
                     return;
                 } else {
                     ack({ error: true, msg: "Domain already used" });
@@ -61,19 +46,26 @@ global.SE.on("instance:write", async (data, ack) => {
 });
 
 global.SE.on("instance:action", async (data, ack) => {
-    if(!data?._id || data?.status == undefined) {
+    if (!data?._id || data?.status == undefined) {
         ack({ error: true, msg: `Cannot execute instance action`, payload: null });
         return;
     }
 
-    let { _id, status } = data;
-    await global.ENTITIES.updateOne({ _id }, { status });
+    let currentStatus = global.ENTITIES.findOne({ _id: data._id }).status;
+
+    //stop task if instance is restarting or updating
+    if (currentStatus > 1) {
+        ack({ error: true, msg: `Cannot execute instance action`, payload: null });
+        return;
+    }
+
+    await runInstanceAction(data, ack);
 
     ack({ error: false, msg: "Instance action successfully executed", payload: null });
 });
 
 global.SE.on("instance:get", (data, ack) => {
-    if(!data?._id) {
+    if (!data?._id) {
         ack({ error: true, msg: "Cannot get instance by id", payload: null });
         return;
     }
@@ -90,12 +82,12 @@ global.SE.on("instance:list", (ack) => {
 });
 
 global.SE.on("instance:delete", (data, ack) => {
-    if(!data?._id) {
+    if (!data?._id) {
         ack({ error: true, msg: "Cannot delete instance, no _id given.", payload: null });
         return;
     }
+    
+    deleteInstance(data, ack);
 
-    let { _id } = data;
-    global.ENTITIES.deleteOne({ _id });
     ack({ error: false, msg: "Instance successfully deleted", payload: null });
 });
