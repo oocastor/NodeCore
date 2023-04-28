@@ -1,5 +1,5 @@
-import { getUnusedPort } from "../wrapper/entities.js";
-import { getUserRepos } from "../wrapper/github.js";
+import { getUnusedPort } from "../utils/entities.js";
+import { getUserRepos } from "../utils/github.js";
 import { deleteUser, createNewUser } from "../bin/auth.js";
 
 global.SE.on("path:get", async (ack) => {

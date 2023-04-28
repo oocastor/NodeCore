@@ -1,93 +1,116 @@
-import { domainIsUnused, nameIsUnused, portIsUnused } from "../wrapper/entities.js";
-import { createInstance, deleteInstance, runInstanceAction } from "../wrapper/instance.js";
+import { v4 as uuidv4 } from 'uuid';
+import fs from "fs";
 
-global.SE.on("instance:write", async (data, ack) => {
-    if (data?.status == undefined || !data?.name || !data?.env || !data?.cmd || !data?.git || data?.network?.isAccessable == true && (!data?.network?.redirect?.sub
-        || !data?.network?.redirect?.domain || !data?.network?.redirect?.port || isNaN(!data?.network?.redirect?.port))) {
-        ack({ error: true, msg: "Input data incomplete or invalid" });
-        return;
-    }
+import { cloneRepo, pullRepo } from "../utils/git.js";
+import { wait } from "../helper/wait.js";
 
-    let target;
-    if (data?._id) {
-        //delete old entity by _id
-        target = global.ENTITIES.findOne({ _id: data._id });
-        global.ENTITIES.deleteOne(target);
-    }
+async function createInstance(data, ack) {
+    let update = data._id != undefined;
 
-    //name is unused
-    if (nameIsUnused(data.name)) {
-        if (!data.network.isAccessable) {
-            //clear network config for instance
-            data.network.redirect.sub = "";
-            data.network.redirect.domain = "";
-            data.network.redirect.port = 0;
-
-            await createInstance(data, ack);
+    if (!data._id) {
+        data._id = uuidv4();
+        //clone git repo
+        let clone = await cloneRepo(data.git, data._id);
+        if (clone.error) {
+            ack(clone);
             return;
-        } else {
-            if (portIsUnused(data.network.redirect.port)) {
-                if (domainIsUnused(data.network.redirect.sub, data.network.redirect.domain)) {
-                    await createInstance(data, ack)
-                    return;
-                } else {
-                    ack({ error: true, msg: "Domain already used" });
-                }
-            } else {
-                ack({ error: true, msg: "Port already used" });
-            }
         }
     } else {
-        ack({ error: true, msg: "Name already used" });
+        //update git repo
+        let pull = await pullRepo(data._id);
+        if (pull.error) {
+            ack(pull);
+            return;
+        }
     }
+    //insert new entity
+    global.ENTITIES.insertOne({ type: "instance", ...data });
 
-    //insert old entity back if something goes wrong
-    if (target) global.ENTITIES.insertOne(target);
-});
+    //TODO: reload proxy
 
-global.SE.on("instance:action", async (data, ack) => {
-    if (!data?._id || data?.status == undefined) {
-        ack({ error: true, msg: `Cannot execute instance action`, payload: null });
-        return;
+    ack({ error: false, msg: `Instance successfully ${!update ? "created" : "updated"}` });
+}
+
+async function runInstanceAction(data, ack) {
+    let { status, _id } = data;
+
+    if (status == 0) {
+        /** STOP */
+
+        //TODO: stop instance via pm2
+
+        await wait(1000);
+
+        //set status to stopped (0)
+        global.ENTITIES.updateOne({ _id }, { status });
+    } else if (status == 1) {
+        /** START */
+
+        //TODO: start instance via pm2
+
+        await wait(1000);
+
+        //set status to running (1)
+        global.ENTITIES.updateOne({ _id }, { status });
+    } else if (status == 2) {
+        /** RESTART */
+
+        //set status to restarting (2)
+        global.ENTITIES.updateOne({ _id }, { status });
+
+        //TODO: restart instance via pm2
+
+        //finish? -> change status back to running (1)
+        await wait(5000);
+        global.ENTITIES.updateOne({ _id }, { status: 1 });
+    } else if (status == 3) {
+        /** UPDATE */
+
+        //set status to updating (3)
+        global.ENTITIES.updateOne({ _id }, { status });
+
+        //stop instance
+
+        //TODO: stop instance via pm2
+
+        //pull repo
+        let instance = global.ENTITIES.findOne({ _id });
+        let pull = await pullRepo(instance._id);
+        if (pull.error) {
+            ack(pull);
+            global.ENTITIES.updateOne({ _id }, { status: 0 });
+            return;
+        }
+
+        //start instance
+
+        //TODO: start instance via pm2
+
+        await wait(5000);
+
+        //finish? -> change status back to running (1)
+        global.ENTITIES.updateOne({ _id }, { status: 1 });
     }
+}
 
-    let currentStatus = global.ENTITIES.findOne({ _id: data._id }).status;
-
-    //stop task if instance is restarting or updating
-    if (currentStatus > 1) {
-        ack({ error: true, msg: `Cannot execute instance action`, payload: null });
-        return;
-    }
-
-    await runInstanceAction(data, ack);
-
-    ack({ error: false, msg: "Instance action successfully executed", payload: null });
-});
-
-global.SE.on("instance:get", (data, ack) => {
-    if (!data?._id) {
-        ack({ error: true, msg: "Cannot get instance by id", payload: null });
-        return;
-    }
-
+async function deleteInstance(data, ack) {
     let { _id } = data;
-    let instance = global.ENTITIES.findOne({ type: "instance", _id });
-    ack({ error: false, msg: "Fetched instance entity", payload: instance });
-});
 
-global.SE.on("instance:list", (ack) => {
-    let instances = global.ENTITIES.findMany({ type: "instance" });
-    instances.sort((a, b) => a.name < b.name ? -1 : 1);
-    ack({ error: false, msg: "Fetched all instance entities", payload: instances });
-});
+    //stop instance in pm2
 
-global.SE.on("instance:delete", (data, ack) => {
-    if (!data?._id) {
-        ack({ error: true, msg: "Cannot delete instance, no _id given.", payload: null });
-        return;
-    }
-    
-    deleteInstance(data, ack);
+    //TODO: pm2 integration
 
-    ack({ error: false, msg: "Instance successfully deleted", payload: null });
-});
+    let dir = global.ENTITIES.findOne({ _id })._id;
+    let path = global.CONFIG.findOne({ entity: "path" }).value;
+
+    //delete instance directory
+    fs.rmSync(`${path}/${dir}`, { recursive: true, force: true });
+
+    global.ENTITIES.deleteOne({ _id });
+}
+
+export {
+    createInstance,
+    runInstanceAction,
+    deleteInstance
+}

@@ -3,7 +3,7 @@ import "./bin/setup.js";
 import "./bin/database.js";
 import "./bin/socket.js";
 
-import "./modules/sysInfo.js";
-import "./modules/redirect.js";
-import "./modules/instance.js";
-import "./modules/utils.js";
+import "./listener/sysInfo.js";
+import "./listener/redirect.js";
+import "./listener/instance.js";
+import "./listener/utils.js";

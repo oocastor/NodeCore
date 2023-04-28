@@ -1,4 +1,4 @@
-import { domainIsUnused, nameIsUnused } from "../wrapper/entities.js";
+import { domainIsUnused, nameIsUnused } from "../utils/entities.js";
 
 global.SE.on("redirect:write", async (data, ack) => {
     if (data?.status == undefined || !data?.name || !data?.network?.sub || !data?.network?.domain || !data?.network?.port || isNaN(!data?.network?.port)) {
