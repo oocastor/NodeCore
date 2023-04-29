@@ -1,9 +1,11 @@
+import fs from "fs";
+
 import { getUnusedPort } from "../utils/entities.js";
 import { getUserRepos } from "../utils/github.js";
 import { deleteUser, createNewUser } from "../bin/auth.js";
 
 global.SE.on("path:get", async (ack) => {
-    let { value } = await global.CONFIG.findOne({ entity: "path" });
+    let { value } = global.CONFIG.findOne({ entity: "path" });
     ack({ error: false, msg: "Path successfully fetched", payload: value });
 });
 
@@ -12,12 +14,19 @@ global.SE.on("path:set", async (data, ack) => {
         ack({ error: true, msg: "Cannot change path - input incomplete.", payload: null });
         return;
     }
-    if (await global.ENTITIES.findOne({ type: "instance" })) {
+    if (global.ENTITIES.findOne({ type: "instance" })) {
         ack({ error: true, msg: "Cannot change path - there are already running intances!", payload: null });
         return;
     }
+    
     let { path } = data;
-    await global.CONFIG.updateOne({ entity: "path" }, { value: path });
+
+    //create dir
+    if (!fs.existsSync(path)) fs.mkdirSync(path);
+
+    //change path
+    global.CONFIG.updateOne({ entity: "path" }, { value: path });
+
     ack({ error: false, msg: "Path successfully changed", payload: null });
 });
 
@@ -35,13 +44,13 @@ global.SE.on("account:set", async (data, ack) => {
 });
 
 global.SE.on("github:get", async (ack) => {
-    let { value } = JSON.parse(JSON.stringify(await global.CONFIG.findOne({ entity: "github" }))); //deep copy element
+    let { value } = JSON.parse(JSON.stringify(global.CONFIG.findOne({ entity: "github" }))); //deep copy element
     value.pat = value.pat && "hehe got u, no token to see here :P";
     ack({ error: false, msg: "Gihtub account data successfully fetched", payload: value });
 });
 
 global.SE.on("github:set", async (data, ack) => {
-    await global.CONFIG.updateOne({ entity: "github" }, { value: data });
+    global.CONFIG.updateOne({ entity: "github" }, { value: data });
     ack({ error: false, msg: "Github account data has been changed", payload: null });
 });
 
@@ -56,22 +65,22 @@ global.SE.on("github:repos", async (ack) => {
 
 global.SE.on("domain:add", async (data, ack) => {
     let { domain } = data;
-    let { value } = await global.CONFIG.findOne({ entity: "domains" });
+    let { value } = global.CONFIG.findOne({ entity: "domains" });
     value.push(domain);
-    await global.CONFIG.updateOne({ entity: "domains" }, { value });
+    global.CONFIG.updateOne({ entity: "domains" }, { value });
     ack({ error: false, msg: "New domain successfully added", payload: null });
 })
 
 global.SE.on("domain:delete", async (data, ack) => {
     let { domain } = data;
-    let { value } = await global.CONFIG.findOne({ entity: "domains" });
+    let { value } = global.CONFIG.findOne({ entity: "domains" });
     value = value.filter(f => f !== domain);
-    await global.CONFIG.updateOne({ entity: "domains" }, { value });
+    global.CONFIG.updateOne({ entity: "domains" }, { value });
     ack({ error: false, msg: "Domain successfully deleted", payload: null });
 })
 
 global.SE.on("domain:list", async (ack) => {
-    let { value } = await global.CONFIG.findOne({ entity: "domains" });
+    let { value } = global.CONFIG.findOne({ entity: "domains" });
     ack({ error: false, msg: "Fetched available domains", payload: value });
 })
 

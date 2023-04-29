@@ -30,11 +30,11 @@ function createProcess(data) {
             }
             pm2.start(data, (err) => {
                 if (err) {
-                    res({ error: true, msg: "Cannot get start node server with pm2", payload: null });
+                    res({ error: true, msg: "Cannot start node instance with pm2", payload: null });
                     console.error(err);
                     return;
                 }
-                res({ error: false, msg: "Node server successfully started", payload: null });
+                res({ error: false, msg: "Node instance successfully started", payload: null });
             });
         });
     });
@@ -68,13 +68,13 @@ function restartProcess(pid) {
                 console.error(err);
                 return;
             }
-            pm2.stop(pid, (err) => {
+            pm2.restart(pid, (err) => {
                 if (err) {
                     res({ error: true, msg: "Cannot restart pm2 process", payload: null });
                     console.error(err);
                     return;
                 }
-                res({ error: false, msg: "Node server successfully restarted", payload: null });
+                res({ error: false, msg: "Node instance successfully restarted", payload: null });
             });
         });
     });

@@ -1,5 +1,5 @@
 import { domainIsUnused, nameIsUnused, portIsUnused } from "../utils/entities.js";
-import { createInstance, deleteInstance, runInstanceAction } from "../modules/instance.js";
+import { createInstance, deleteInstance, runInstanceAction } from "../modules/instance.module.js";
 
 global.SE.on("instance:write", async (data, ack) => {
     if (data?.status == undefined || !data?.name || !data?.env || !data?.cmd || !data?.git || data?.network?.isAccessable == true && (!data?.network?.redirect?.sub
@@ -59,7 +59,11 @@ global.SE.on("instance:action", async (data, ack) => {
         return;
     }
 
-    await runInstanceAction(data, ack);
+    let run = await runInstanceAction(data);
+    if(run.error) {
+        ack(run);
+        return;
+    }
 
     ack({ error: false, msg: "Instance action successfully executed", payload: null });
 });
