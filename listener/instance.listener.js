@@ -85,13 +85,17 @@ global.SE.on("instance:list", (ack) => {
     ack({ error: false, msg: "Fetched all instance entities", payload: instances });
 });
 
-global.SE.on("instance:delete", (data, ack) => {
+global.SE.on("instance:delete", async (data, ack) => {
     if (!data?._id) {
         ack({ error: true, msg: "Cannot delete instance, no _id given.", payload: null });
         return;
     }
     
-    deleteInstance(data, ack);
+    let del = await deleteInstance(data, ack);
+    if(del.error) {
+        ack(del);
+        return;
+    }
 
     ack({ error: false, msg: "Instance successfully deleted", payload: null });
 });

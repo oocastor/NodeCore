@@ -2,9 +2,12 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from "fs";
 
 import { cloneRepo, pullRepo } from "../utils/git.js";
+import { runCmd } from '../utils/cmd.js';
+
 import { wait } from "../helper/wait.helper.js";
 import { getPackageJSON } from '../helper/instance.helper.js';
-import { restartProcess, createProcess, stopProcess } from '../utils/pm2.js';
+
+import { restartProcess, createProcess, stopProcess, deleteProcess } from '../utils/pm2.js';
 
 async function createInstance(data, ack) {
     let update = data._id != undefined;
@@ -19,18 +22,38 @@ async function createInstance(data, ack) {
         }
 
         //get start script via package.json
-        let packageJSON = await getPackageJSON(data);
+        let packageJSON = getPackageJSON(data);
         if (packageJSON.error) {
             ack(packageJSON);
-            deleteInstance(data);
+
+            //delete instance directory
+            let path = global.CONFIG.findOne({ entity: "path" }).value;
+            fs.rmSync(`${path}/${data._id}`, { recursive: true, force: true });
+
             return;
         }
 
         data.script = packageJSON.payload.main;
+        data.version = packageJSON.payload.version;
+        data.pm2CreationDone = false;
     }
 
     //insert new entity
     global.ENTITIES.insertOne({ type: "instance", ...data });
+
+    //delete empty CMDs
+    data.cmd = data.cmd.filter(f => f.replace(/ /g, "").length != 0);
+
+    //run start CMDs
+    await Promise.all(data.cmd.map(m => runCmd(data, m)))
+    .then((res) => {
+        res.forEach(r => {
+            if(r.error) ack(r);
+        })
+    })
+    .catch((e) => {
+        console.error(e);
+    });
 
     //TODO: reload proxy
 
@@ -58,11 +81,19 @@ async function runInstanceAction(data) {
             let path = global.CONFIG.findOne({ entity: "path" }).value;
             let instance = global.ENTITIES.findOne({ _id });
 
-            let creation = await createProcess({ cwd: `${path}/${instance._id}/`, script: instance.script, name: instance._id });
+            let env = instance.env.reduce((acc, str) => {
+                const [key, value] = str.split("=");
+                acc[key] = value;
+                return acc;
+            }, {});
+
+            let creation = await createProcess({ cwd: `${path}/${instance._id}/`, script: instance.script, name: instance._id, env });
             if (creation.error) {
                 res(creation);
                 return;
             }
+
+            instance.pm2CreationDone = true;
 
             //set status to running (1)
             global.ENTITIES.updateOne({ _id }, { status });
@@ -81,7 +112,7 @@ async function runInstanceAction(data) {
 
             await wait(2000);
 
-            //change status back to running (1)
+            //set status to running (1)
             global.ENTITIES.updateOne({ _id }, { status: 1 });
 
         } else if (status == 3) {
@@ -92,11 +123,13 @@ async function runInstanceAction(data) {
             //set status to updating (3)
             global.ENTITIES.updateOne({ _id }, { status });
 
-            //stop instance
-            let stop = await stopProcess(_id);
-            if (stop.error) {
-                res(stop);
-                return;
+            if (prevStatus != 0) {
+                //stop instance
+                let stop = await stopProcess(_id);
+                if (stop.error) {
+                    res(stop);
+                    return;
+                }
             }
 
             //pull repo
@@ -127,19 +160,36 @@ async function runInstanceAction(data) {
     });
 }
 
-async function deleteInstance(data, ack) {
-    let { _id } = data;
+function deleteInstance(data) {
+    return new Promise(async (res, rej) => {
+        let { _id } = data;
 
-    //stop instance in pm2
+        let instance = global.ENTITIES.findOne({ _id });
 
-    //TODO: pm2 integration
+        //delete instance in pm2
+        if (instance.pm2CreationDone) {
+            let del = await deleteProcess(_id);
+            if (del.error) {
+                res(del);
+                // return;
+            }
+        }
 
-    let path = global.CONFIG.findOne({ entity: "path" }).value;
+        let path = global.CONFIG.findOne({ entity: "path" }).value;
 
-    //delete instance directory
-    fs.rmSync(`${path}/${_id}`, { recursive: true, force: true });
+        //delete instance directory
+        fs.rm(`${path}/${_id}`, { recursive: true, force: true }, (err) => {
+            if (err) {
+                res({ error: true, msg: "Cannot delete project files", payload: null });
+                // return;
+            }
 
-    global.ENTITIES.deleteOne({ _id });
+            //delete instance in DB
+            global.ENTITIES.deleteOne({ _id });
+
+            res({ error: false, msg: "Instance deleted", payload: null });
+        });
+    });
 }
 
 export {

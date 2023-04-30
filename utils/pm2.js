@@ -88,7 +88,7 @@ function deleteProcess(pid) {
                 console.error(err);
                 return;
             }
-            pm2.stop(pid, (err) => {
+            pm2.delete(pid, (err) => {
                 if (err) {
                     res({ error: true, msg: "Cannot delete pm2 process", payload: null });
                     console.error(err);
