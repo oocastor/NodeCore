@@ -42,9 +42,10 @@ io.on("connect", (socket) => {
     });
 
     socket.onAny((event, ...args) => {
-        if(socket.rooms.has("authed")) se.emit(event, ...args)
+        if(socket.rooms.has("authed")) se.emit(event, ...args, socket.id)
         else socket.emit("goto:login", {msg: "Access denied"});
     });
 });
 
+global.IO = io;
 global.SE = se;

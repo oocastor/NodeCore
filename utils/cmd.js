@@ -8,7 +8,7 @@ function runCmd (data, cmd) {
 
         r.on("close", (code) => {
             if(code !== 0) {
-                res({error: true, msg: `Error while executing the command: ${cmd}`, payload: null});
+                rej({error: true, msg: `Error while executing the command: ${cmd}`, payload: null});
                 return;
             }
             res({error: false, msg: `Command successfully executed`, payload: null});

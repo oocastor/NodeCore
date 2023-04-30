@@ -1,48 +1,93 @@
-import { domainIsUnused, nameIsUnused, portIsUnused } from "../utils/entities.js";
+import { domainIsUnused, nameIsUnused, portIsUnused } from "../utils/entities-promise.js";
 import { createInstance, deleteInstance, runInstanceAction } from "../modules/instance.module.js";
 
-global.SE.on("instance:write", async (data, ack) => {
-    if (data?.status == undefined || !data?.name || !data?.env || !data?.cmd || !data?.git || data?.network?.isAccessable == true && (!data?.network?.redirect?.sub
-        || !data?.network?.redirect?.domain || !data?.network?.redirect?.port || isNaN(!data?.network?.redirect?.port))) {
+import { hasAllProperties } from "../helper/object.helper.js";
+
+global.SE.on("instance:write", async (data, ack, id) => {
+    if (!hasAllProperties(data, ["status", "name", "env", "cmd", "git", "network", "isAccessable", "method"])
+        || data.network.isAccessable == true && !hasAllProperties(data, ["redirect", "sub", "domain", "port"])) {
         ack({ error: true, msg: "Input data incomplete or invalid" });
         return;
     }
 
-    let target;
-    if (data?._id) {
-        //delete old entity by _id
-        target = global.ENTITIES.findOne({ _id: data._id });
-        global.ENTITIES.deleteOne(target);
-    }
+    let { status, name, git, network, cmd, env, method } = data;
 
-    //name is unused
-    if (nameIsUnused(data.name)) {
-        if (!data.network.isAccessable) {
+    if (method == "CREATE") {
+
+        /** CREATE NEW PROCESS */
+
+        let scopes = [nameIsUnused(name)];
+
+        if (network.isAccessable) scopes = scopes.concat([portIsUnused(network.redirect.port), domainIsUnused(network.redirect.sub, network.redirect.domain)])
+        else {
             //clear network config for instance
-            data.network.redirect.sub = "";
-            data.network.redirect.domain = "";
-            data.network.redirect.port = 0;
-
-            await createInstance(data, ack);
-            return;
-        } else {
-            if (portIsUnused(data.network.redirect.port)) {
-                if (domainIsUnused(data.network.redirect.sub, data.network.redirect.domain)) {
-                    await createInstance(data, ack)
-                    return;
-                } else {
-                    ack({ error: true, msg: "Domain already used" });
-                }
-            } else {
-                ack({ error: true, msg: "Port already used" });
-            }
+            network.redirect.sub = "";
+            network.redirect.domain = "";
+            network.redirect.port = 0;
         }
+
+        //check if all scopes passed
+        Promise.allSettled(scopes).then((res) => {
+            let errs = res.filter(f => f.status == "rejected").map(m => m.reason);
+
+            if (errs.length) {
+                ack(errs[0]);
+                global.IO.to(id).emit("msg:get", errs.slice(1));
+                return;
+            }
+
+            //creation process
+            createInstance(data).then((res) => ack(res)).catch((err) => ack(err));
+        }).catch((e) => console.error(e));
     } else {
-        ack({ error: true, msg: "Name already used" });
+
+        /** UPDATE EXISTING PROCESS */
+
+
+
     }
 
-    //insert old entity back if something goes wrong
-    if (target) global.ENTITIES.insertOne(target);
+    // if (data?.status == undefined || !data?.name || !data?.env || !data?.cmd || !data?.git || data?.network?.isAccessable == true && (!data?.network?.redirect?.sub
+    //     || !data?.network?.redirect?.domain || !data?.network?.redirect?.port || isNaN(!data?.network?.redirect?.port))) {
+    //     ack({ error: true, msg: "Input data incomplete or invalid" });
+    //     return;
+    // }
+
+    // let target;
+    // if (data?._id) {
+    //     //delete old entity by _id
+    //     target = global.ENTITIES.findOne({ _id: data._id });
+    //     global.ENTITIES.deleteOne(target);
+    // }
+
+    // //name is unused
+    // if (nameIsUnused(data.name)) {
+    //     if (!data.network.isAccessable) {
+    //         //clear network config for instance
+    //         data.network.redirect.sub = "";
+    //         data.network.redirect.domain = "";
+    //         data.network.redirect.port = 0;
+
+    //         await createInstance(data, ack);
+    //         return;
+    //     } else {
+    //         if (portIsUnused(data.network.redirect.port)) {
+    //             if (domainIsUnused(data.network.redirect.sub, data.network.redirect.domain)) {
+    //                 await createInstance(data, ack)
+    //                 return;
+    //             } else {
+    //                 ack({ error: true, msg: "Domain already used" });
+    //             }
+    //         } else {
+    //             ack({ error: true, msg: "Port already used" });
+    //         }
+    //     }
+    // } else {
+    //     ack({ error: true, msg: "Name already used" });
+    // }
+
+    // //insert old entity back if something goes wrong
+    // if (target) global.ENTITIES.insertOne(target);
 });
 
 global.SE.on("instance:action", async (data, ack) => {
@@ -60,7 +105,7 @@ global.SE.on("instance:action", async (data, ack) => {
     }
 
     let run = await runInstanceAction(data);
-    if(run.error) {
+    if (run.error) {
         ack(run);
         return;
     }
@@ -90,9 +135,9 @@ global.SE.on("instance:delete", async (data, ack) => {
         ack({ error: true, msg: "Cannot delete instance, no _id given.", payload: null });
         return;
     }
-    
+
     let del = await deleteInstance(data, ack);
-    if(del.error) {
+    if (del.error) {
         ack(del);
         return;
     }

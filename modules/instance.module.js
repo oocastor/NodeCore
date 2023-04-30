@@ -10,54 +10,103 @@ import { getPackageJSON } from '../helper/instance.helper.js';
 import { restartProcess, createProcess, stopProcess, deleteProcess } from '../utils/pm2.js';
 
 async function createInstance(data, ack) {
-    let update = data._id != undefined;
+    return new Promise(async (res, rej) => {
 
-    if (!data._id) {
+        //create uuid, ´cause
         data._id = uuidv4();
+
         //clone git repo
         let clone = await cloneRepo(data.git, data._id);
         if (clone.error) {
-            ack(clone);
+            rej(clone);
+            //interrupt creation process
             return;
         }
 
         //get start script via package.json
         let packageJSON = getPackageJSON(data);
         if (packageJSON.error) {
-            ack(packageJSON);
-
+            rej(packageJSON);
             //delete instance directory
             let path = global.CONFIG.findOne({ entity: "path" }).value;
             fs.rmSync(`${path}/${data._id}`, { recursive: true, force: true });
-
+            //interrupt creation process
             return;
         }
 
         data.script = packageJSON.payload.main;
         data.version = packageJSON.payload.version;
         data.pm2CreationDone = false;
-    }
 
-    //insert new entity
-    global.ENTITIES.insertOne({ type: "instance", ...data });
 
-    //delete empty CMDs
-    data.cmd = data.cmd.filter(f => f.replace(/ /g, "").length != 0);
+        //insert new entity
+        global.ENTITIES.insertOne({ type: "instance", ...data });
 
-    //run start CMDs
-    await Promise.all(data.cmd.map(m => runCmd(data, m)))
-    .then((res) => {
-        res.forEach(r => {
-            if(r.error) ack(r);
-        })
-    })
-    .catch((e) => {
-        console.error(e);
+        //delete empty CMDs
+        data.cmd = data.cmd.filter(f => f.replace(/ /g, "").length != 0);
+
+        //run start CMDs
+        Promise.allSettled(data.cmd.map(m => runCmd(data, m)))
+            .then((res) => {
+                let errs = res.filter(f => f.error);
+                let err = errs.reduce((a, r) => a.msg += `\n${r.msg}`, errs[0]);
+                //send msg to user, but do not interrupt creation process
+                global.SE.emit("msg:get", err);
+            });
+
+        //TODO: reload proxy
+
+        res({ error: false, msg: `Instance successfully created` });
     });
 
-    //TODO: reload proxy
+    // let update = data._id != undefined;
 
-    ack({ error: false, msg: `Instance successfully ${!update ? "created" : "updated"}` });
+    // if (!data._id) {
+    //     data._id = uuidv4();
+    //     //clone git repo
+    //     let clone = await cloneRepo(data.git, data._id);
+    //     if (clone.error) {
+    //         ack(clone);
+    //         return;
+    //     }
+
+    //     //get start script via package.json
+    //     let packageJSON = getPackageJSON(data);
+    //     if (packageJSON.error) {
+    //         ack(packageJSON);
+
+    //         //delete instance directory
+    //         let path = global.CONFIG.findOne({ entity: "path" }).value;
+    //         fs.rmSync(`${path}/${data._id}`, { recursive: true, force: true });
+
+    //         return;
+    //     }
+
+    //     data.script = packageJSON.payload.main;
+    //     data.version = packageJSON.payload.version;
+    //     data.pm2CreationDone = false;
+    // }
+
+    // //insert new entity
+    // global.ENTITIES.insertOne({ type: "instance", ...data });
+
+    // //delete empty CMDs
+    // data.cmd = data.cmd.filter(f => f.replace(/ /g, "").length != 0);
+
+    // //run start CMDs
+    // await Promise.all(data.cmd.map(m => runCmd(data, m)))
+    //     .then((res) => {
+    //         res.forEach(r => {
+    //             if (r.error) ack(r);
+    //         })
+    //     })
+    //     .catch((e) => {
+    //         console.error(e);
+    //     });
+
+    // //TODO: reload proxy
+
+    // ack({ error: false, msg: `Instance successfully ${!update ? "created" : "updated"}` });
 }
 
 async function runInstanceAction(data) {
