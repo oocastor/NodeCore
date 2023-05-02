@@ -1,5 +1,5 @@
 import { domainIsUnused, nameIsUnused, portIsUnused } from "../utils/entities-promise.js";
-import { createInstance, deleteInstance, runInstanceAction } from "../modules/instance.module.js";
+import { createInstance, updateInstance, deleteInstance, runInstanceAction } from "../modules/instance.module.js";
 
 import { hasAllProperties } from "../helper/object.helper.js";
 
@@ -10,85 +10,60 @@ global.SE.on("instance:write", async (data, ack, id) => {
         return;
     }
 
-    let { status, name, git, network, cmd, env, method } = data;
+    let { _id, status, name, git, network, cmd, env, method } = data;
+
+    //delete method, status prop
+    delete data.method;
+    delete data.status;
+
+    let scopes = [];
 
     if (method == "CREATE") {
+        scopes.push(nameIsUnused(name));
+        if (network.isAccessable) scopes = scopes.concat([portIsUnused(network.redirect.port), domainIsUnused(network.redirect.sub, network.redirect.domain)]);
+    } else if (method == "UPDATE") {
+        let old = global.ENTITIES.findOne({ _id });
 
-        /** CREATE NEW PROCESS */
-
-        let scopes = [nameIsUnused(name)];
-
-        if (network.isAccessable) scopes = scopes.concat([portIsUnused(network.redirect.port), domainIsUnused(network.redirect.sub, network.redirect.domain)])
-        else {
-            //clear network config for instance
-            network.redirect.sub = "";
-            network.redirect.domain = "";
-            network.redirect.port = 0;
-        }
-
-        //check if all scopes passed
-        Promise.allSettled(scopes).then((res) => {
-            let errs = res.filter(f => f.status == "rejected").map(m => m.reason);
-
-            if (errs.length) {
-                let msgs = errs.map(m => m.msg);
-                errs[0].msg = msgs;
-                ack(errs[0]);
-                return;
-            }
-
-            //creation process
-            createInstance(data, id).then((res) => ack(res)).catch((err) => ack(err));
-        }).catch((e) => console.error(e));
-    } else {
-
-        /** UPDATE EXISTING PROCESS */
-
-
-
+        //name changed, add to scope
+        if (old.name != name) scopes.push(nameIsUnused(name))
+        //port changed, add to scope
+        else if (old.network.redirect.port != network.redirect.port) scopes.push(portIsUnused(network.redirect.port))
+        //(sub)domain changed, add to scope
+        else if (old.network.redirect.sub != network.redirect.sub
+            || old.network.redirect.domain != network.redirect.domain) scopes.push(domainIsUnused(network.redirect.sub, network.redirect.domain));
     }
 
-    // if (data?.status == undefined || !data?.name || !data?.env || !data?.cmd || !data?.git || data?.network?.isAccessable == true && (!data?.network?.redirect?.sub
-    //     || !data?.network?.redirect?.domain || !data?.network?.redirect?.port || isNaN(!data?.network?.redirect?.port))) {
-    //     ack({ error: true, msg: "Input data incomplete or invalid" });
-    //     return;
-    // }
 
-    // let target;
-    // if (data?._id) {
-    //     //delete old entity by _id
-    //     target = global.ENTITIES.findOne({ _id: data._id });
-    //     global.ENTITIES.deleteOne(target);
-    // }
+    if (!network.isAccessable) {
+        //clear network config for instance
+        network.redirect.sub = "";
+        network.redirect.domain = "";
+        network.redirect.port = 0;
+    }
 
-    // //name is unused
-    // if (nameIsUnused(data.name)) {
-    //     if (!data.network.isAccessable) {
-    //         //clear network config for instance
-    //         data.network.redirect.sub = "";
-    //         data.network.redirect.domain = "";
-    //         data.network.redirect.port = 0;
+    //check if all scopes passed
+    Promise.allSettled(scopes).then((res) => {
+        let errs = res.filter(f => f.status == "rejected").map(m => m.reason);
 
-    //         await createInstance(data, ack);
-    //         return;
-    //     } else {
-    //         if (portIsUnused(data.network.redirect.port)) {
-    //             if (domainIsUnused(data.network.redirect.sub, data.network.redirect.domain)) {
-    //                 await createInstance(data, ack)
-    //                 return;
-    //             } else {
-    //                 ack({ error: true, msg: "Domain already used" });
-    //             }
-    //         } else {
-    //             ack({ error: true, msg: "Port already used" });
-    //         }
-    //     }
-    // } else {
-    //     ack({ error: true, msg: "Name already used" });
-    // }
+        if (errs.length) {
+            let msgs = errs.map(m => m.msg);
+            errs[0].msg = msgs;
+            ack(errs[0]);
+            return;
+        }
 
-    // //insert old entity back if something goes wrong
-    // if (target) global.ENTITIES.insertOne(target);
+        if (method == "CREATE") {
+
+            /** CREATE NEW PROCESS */
+            createInstance(data, id).then((res) => ack(res)).catch((err) => ack(err));
+
+        } else if (method == "UPDATE") {
+
+            /** UPDATE EXISTING PROCESS */
+            updateInstance(data, id).then((res) => ack(res)).catch((err) => ack(err));
+
+        }
+    }).catch((e) => console.error(e));
 });
 
 global.SE.on("instance:action", async (data, ack) => {

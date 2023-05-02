@@ -7,6 +7,8 @@ import { runCmd } from '../utils/cmd.js';
 import { wait } from "../helper/wait.helper.js";
 import { getPackageJSON } from '../helper/instance.helper.js';
 
+import { isEqual, deepCopy } from '../helper/object.helper.js';
+
 import { restartProcess, createProcess, stopProcess, deleteProcess } from '../utils/pm2.js';
 
 async function createInstance(data, id) {
@@ -61,55 +63,55 @@ async function createInstance(data, id) {
 
         res({ error: false, msg: `Instance successfully created` });
     });
+}
 
-    // let update = data._id != undefined;
+function updateInstance(data, id) {
+    return new Promise((res, rej) => {
+        //save old entity
+        let old = deepCopy(global.ENTITIES.findOne({ _id: data._id }));
 
-    // if (!data._id) {
-    //     data._id = uuidv4();
-    //     //clone git repo
-    //     let clone = await cloneRepo(data.git, data._id);
-    //     if (clone.error) {
-    //         ack(clone);
-    //         return;
-    //     }
+        if (!old) {
+            rej({ error: true, msg: "No instance to update found", payload: null });
+            return;
+        }
 
-    //     //get start script via package.json
-    //     let packageJSON = getPackageJSON(data);
-    //     if (packageJSON.error) {
-    //         ack(packageJSON);
+        //update entity
+        global.ENTITIES.updateOne({ _id: data._id }, { ...data });
 
-    //         //delete instance directory
-    //         let path = global.CONFIG.findOne({ entity: "path" }).value;
-    //         fs.rmSync(`${path}/${data._id}`, { recursive: true, force: true });
+        //reload proxy, on subdomain change
+        if (data.network.isAccessable && !isEqual(data.network.redirect, old.network.redirect)) {
+            //TODO: reload proxy
+        }
 
-    //         return;
-    //     }
+        //run start cmds again
+        console.log(!isEqual(data.cmd, old.cmd))
+        if (!isEqual(data.cmd, old.cmd)) {
+            //delete empty CMDs
+            data.cmd = data.cmd.filter(f => f.replace(/ /g, "").length != 0);
 
-    //     data.script = packageJSON.payload.main;
-    //     data.version = packageJSON.payload.version;
-    //     data.pm2CreationDone = false;
-    // }
+            //run start CMDs (async)
+            Promise.allSettled(data.cmd.map(m => runCmd(data, m)))
+                .then((res) => {
+                    let errs = res.filter(f => f.status == "rejected").map(m => m.reason);
 
-    // //insert new entity
-    // global.ENTITIES.insertOne({ type: "instance", ...data });
+                    if (errs.length) {
+                        let msgs = errs.map(m => m.msg);
+                        errs[0].msg = msgs;
+                        global.IO.to(id).emit("msg:get", errs[0]);
+                    }
+                });
+        }
 
-    // //delete empty CMDs
-    // data.cmd = data.cmd.filter(f => f.replace(/ /g, "").length != 0);
+        //restart instance if env vars changed
+        if (!isEqual(data.cmd, old.cmd) && old.status == 1
+            || !isEqual(data.env, old.env) && old.status == 1) {
+            runInstanceAction({ _id: data._id, status: 1 }).catch((err) => {
+                global.IO.to(id).emit("msg:get", err);
+            });
+        }
 
-    // //run start CMDs
-    // await Promise.all(data.cmd.map(m => runCmd(data, m)))
-    //     .then((res) => {
-    //         res.forEach(r => {
-    //             if (r.error) ack(r);
-    //         })
-    //     })
-    //     .catch((e) => {
-    //         console.error(e);
-    //     });
-
-    // //TODO: reload proxy
-
-    // ack({ error: false, msg: `Instance successfully ${!update ? "created" : "updated"}` });
+        res({ error: false, msg: "Instance updated", payload: null });
+    });
 }
 
 async function runInstanceAction(data) {
@@ -246,6 +248,7 @@ function deleteInstance(data) {
 
 export {
     createInstance,
+    updateInstance,
     runInstanceAction,
     deleteInstance
 }
