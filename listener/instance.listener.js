@@ -12,9 +12,8 @@ global.SE.on("instance:write", async (data, ack, id) => {
 
     let { _id, status, name, git, network, cmd, env, method } = data;
 
-    //delete method, status prop
+    //delete method prop
     delete data.method;
-    delete data.status;
 
     let scopes = [];
 
@@ -58,6 +57,9 @@ global.SE.on("instance:write", async (data, ack, id) => {
             createInstance(data, id).then((res) => ack(res)).catch((err) => ack(err));
 
         } else if (method == "UPDATE") {
+
+            //delete status prop
+            delete data.status;
 
             /** UPDATE EXISTING PROCESS */
             updateInstance(data, id).then((res) => ack(res)).catch((err) => ack(err));
