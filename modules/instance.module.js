@@ -9,7 +9,7 @@ import { getPackageJSON } from '../helper/instance.helper.js';
 
 import { restartProcess, createProcess, stopProcess, deleteProcess } from '../utils/pm2.js';
 
-async function createInstance(data, ack) {
+async function createInstance(data, id) {
     return new Promise(async (res, rej) => {
 
         //create uuid, ´cause
@@ -45,13 +45,16 @@ async function createInstance(data, ack) {
         //delete empty CMDs
         data.cmd = data.cmd.filter(f => f.replace(/ /g, "").length != 0);
 
-        //run start CMDs
+        //run start CMDs (async)
         Promise.allSettled(data.cmd.map(m => runCmd(data, m)))
             .then((res) => {
-                let errs = res.filter(f => f.error);
-                let err = errs.reduce((a, r) => a.msg += `\n${r.msg}`, errs[0]);
-                //send msg to user, but do not interrupt creation process
-                global.SE.emit("msg:get", err);
+                let errs = res.filter(f => f.status == "rejected").map(m => m.reason);
+
+                if (errs.length) {
+                    let msgs = errs.map(m => m.msg);
+                    errs[0].msg = msgs;
+                    global.IO.to(id).emit("msg:get", errs[0]);
+                }
             });
 
         //TODO: reload proxy

@@ -31,13 +31,14 @@ global.SE.on("instance:write", async (data, ack, id) => {
             let errs = res.filter(f => f.status == "rejected").map(m => m.reason);
 
             if (errs.length) {
+                let msgs = errs.map(m => m.msg);
+                errs[0].msg = msgs;
                 ack(errs[0]);
-                global.IO.to(id).emit("msg:get", errs.slice(1));
                 return;
             }
 
             //creation process
-            createInstance(data).then((res) => ack(res)).catch((err) => ack(err));
+            createInstance(data, id).then((res) => ack(res)).catch((err) => ack(err));
         }).catch((e) => console.error(e));
     } else {
 
