@@ -66,7 +66,7 @@ async function createInstance(data, id) {
 }
 
 function updateInstance(data, id) {
-    return new Promise((res, rej) => {
+    return new Promise(async (res, rej) => {
         //save old entity
         let old = deepCopy(global.ENTITIES.findOne({ _id: data._id }));
 
@@ -84,13 +84,12 @@ function updateInstance(data, id) {
         }
 
         //run start cmds again
-        console.log(!isEqual(data.cmd, old.cmd))
         if (!isEqual(data.cmd, old.cmd)) {
             //delete empty CMDs
             data.cmd = data.cmd.filter(f => f.replace(/ /g, "").length != 0);
 
-            //run start CMDs (async)
-            Promise.allSettled(data.cmd.map(m => runCmd(data, m)))
+            //run start CMDs (sync)
+            await Promise.allSettled(data.cmd.map(m => runCmd(data, m)))
                 .then((res) => {
                     let errs = res.filter(f => f.status == "rejected").map(m => m.reason);
 
@@ -102,10 +101,11 @@ function updateInstance(data, id) {
                 });
         }
 
-        //restart instance if env vars changed
+        //restart instance if env vars or cmds changed
         if (!isEqual(data.cmd, old.cmd) && old.status == 1
             || !isEqual(data.env, old.env) && old.status == 1) {
-            runInstanceAction({ _id: data._id, status: 1 }).catch((err) => {
+            runInstanceAction({ _id: data._id, status: 1 }).then(() => {
+            }).catch((err) => {
                 global.IO.to(id).emit("msg:get", err);
             });
         }
@@ -123,7 +123,7 @@ async function runInstanceAction(data) {
 
             let stop = await stopProcess(_id);
             if (stop.error) {
-                res(stop);
+                rej(stop);
                 return;
             }
 
@@ -141,9 +141,12 @@ async function runInstanceAction(data) {
                 return acc;
             }, {});
 
-            let creation = await createProcess({ cwd: `${path}/${instance._id}/`, script: instance.script, name: instance._id, env });
+            let creation = await createProcess({
+                cwd: `${path}/${instance._id}/`, script: instance.script, name: instance._id, env,
+                output: `${path}/${instance._id}/${instance._id}.log`, error: `${path}/${instance._id}/${instance._id}.log`
+            });
             if (creation.error) {
-                res(creation);
+                rej(creation);
                 return;
             }
 
@@ -154,15 +157,15 @@ async function runInstanceAction(data) {
         } else if (status == 2) {
             /** RESTART */
 
-            //set status to restarting (2)
-            global.ENTITIES.updateOne({ _id }, { status });
-
             //restart instance
             let restart = await restartProcess(_id);
             if (restart.error) {
-                res(restart);
+                rej(restart);
                 return;
             }
+
+            //set status to restarting (2)
+            global.ENTITIES.updateOne({ _id }, { status });
 
             await wait(2000);
 
@@ -181,7 +184,7 @@ async function runInstanceAction(data) {
                 //stop instance
                 let stop = await stopProcess(_id);
                 if (stop.error) {
-                    res(stop);
+                    rej(stop);
                     return;
                 }
             }
@@ -190,7 +193,7 @@ async function runInstanceAction(data) {
             let instance = global.ENTITIES.findOne({ _id });
             let pull = await pullRepo(instance._id);
             if (pull.error) {
-                res(pull);
+                rej(pull);
                 global.ENTITIES.updateOne({ _id }, { status: 0 });
                 return;
             }
@@ -199,7 +202,7 @@ async function runInstanceAction(data) {
             if (prevStatus != 0) {
                 let restart = await restartProcess(_id);
                 if (restart.error) {
-                    res(restart);
+                    rej(restart);
                     return;
                 }
 
@@ -224,7 +227,7 @@ function deleteInstance(data) {
         if (instance.pm2CreationDone) {
             let del = await deleteProcess(_id);
             if (del.error) {
-                res(del);
+                rej(del);
                 // return;
             }
         }
@@ -234,7 +237,7 @@ function deleteInstance(data) {
         //delete instance directory
         fs.rm(`${path}/${_id}`, { recursive: true, force: true }, (err) => {
             if (err) {
-                res({ error: true, msg: "Cannot delete project files", payload: null });
+                rej({ error: true, msg: "Cannot delete project files", payload: null });
                 // return;
             }
 

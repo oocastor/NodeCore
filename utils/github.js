@@ -7,7 +7,7 @@ async function getUserRepos() {
         auth: pat
     });
 
-    let repos = [...(await octokit.request('GET /user/repos')).data].map(m => {
+    let repos = [...(await octokit.request('GET /user/repos', {per_page: 100})).data].map(m => {
         return {
             name: m.name,
             uri: m.clone_url,

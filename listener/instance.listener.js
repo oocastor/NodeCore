@@ -1,5 +1,6 @@
 import { domainIsUnused, nameIsUnused, portIsUnused } from "../utils/entities-promise.js";
 import { createInstance, updateInstance, deleteInstance, runInstanceAction } from "../modules/instance.module.js";
+import { addPM2Data } from "../helper/pm2.helper.js";
 
 import { hasAllProperties } from "../helper/object.helper.js";
 
@@ -69,7 +70,7 @@ global.SE.on("instance:write", async (data, ack, id) => {
 });
 
 global.SE.on("instance:action", async (data, ack) => {
-    if (!data?._id || data?.status == undefined) {
+    if (!hasAllProperties(data, ["_id", "status"])) {
         ack({ error: true, msg: `Cannot execute instance action`, payload: null });
         return;
     }
@@ -82,23 +83,18 @@ global.SE.on("instance:action", async (data, ack) => {
         return;
     }
 
-    let run = await runInstanceAction(data);
-    if (run.error) {
-        ack(run);
-        return;
-    }
-
-    ack({ error: false, msg: "Instance action successfully executed", payload: null });
+    /** RUN INSTANCE ACTION */
+    runInstanceAction(data).then(res => ack(res)).catch(err => ack(err));
 });
 
-global.SE.on("instance:get", (data, ack) => {
-    if (!data?._id) {
+global.SE.on("instance:get", async (data, ack) => {
+    if (!hasAllProperties(data, ["_id"])) {
         ack({ error: true, msg: "Cannot get instance by id", payload: null });
         return;
     }
 
     let { _id } = data;
-    let instance = global.ENTITIES.findOne({ type: "instance", _id });
+    let instance = await addPM2Data(global.ENTITIES.findOne({ type: "instance", _id }));
     ack({ error: false, msg: "Fetched instance entity", payload: instance });
 });
 
@@ -108,17 +104,12 @@ global.SE.on("instance:list", (ack) => {
     ack({ error: false, msg: "Fetched all instance entities", payload: instances });
 });
 
-global.SE.on("instance:delete", async (data, ack) => {
-    if (!data?._id) {
+global.SE.on("instance:delete", (data, ack) => {
+    if (!hasAllProperties(data, ["_id"])) {
         ack({ error: true, msg: "Cannot delete instance, no _id given.", payload: null });
         return;
     }
 
-    let del = await deleteInstance(data, ack);
-    if (del.error) {
-        ack(del);
-        return;
-    }
-
-    ack({ error: false, msg: "Instance successfully deleted", payload: null });
+    /** DELETE INSTANCE */
+    deleteInstance(data, ack).then(res => ack(res)).catch(err => ack(err));
 });

@@ -4,7 +4,7 @@ function listProcesses() {
     return new Promise((res, rej) => {
         pm2.connect((err) => {
             if (err) {
-                res({ error: true, msg: "Cannot connect to pm2", payload: null});
+                res({ error: true, msg: "Cannot connect to pm2", payload: null });
                 console.error(err);
                 return;
             }
@@ -24,7 +24,7 @@ function createProcess(data) {
     return new Promise((res, rej) => {
         pm2.connect((err) => {
             if (err) {
-                res({ error: true, msg: "Cannot connect to pm2", payload: null});
+                res({ error: true, msg: "Cannot connect to pm2", payload: null });
                 console.error(err);
                 return;
             }
@@ -44,7 +44,7 @@ function stopProcess(pid) {
     return new Promise((res, rej) => {
         pm2.connect((err) => {
             if (err) {
-                res({ error: true, msg: "Cannot connect to pm2", payload: null});
+                res({ error: true, msg: "Cannot connect to pm2", payload: null });
                 console.error(err);
                 return;
             }
@@ -64,7 +64,7 @@ function restartProcess(pid) {
     return new Promise((res, rej) => {
         pm2.connect((err) => {
             if (err) {
-                res({ error: true, msg: "Cannot connect to pm2", payload: null});
+                res({ error: true, msg: "Cannot connect to pm2", payload: null });
                 console.error(err);
                 return;
             }
@@ -84,7 +84,7 @@ function deleteProcess(pid) {
     return new Promise((res, rej) => {
         pm2.connect((err) => {
             if (err) {
-                res({ error: true, msg: "Cannot connect to pm2", payload: null});
+                res({ error: true, msg: "Cannot connect to pm2", payload: null });
                 console.error(err);
                 return;
             }
