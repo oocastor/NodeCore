@@ -10,7 +10,7 @@ const saltRounds = 10;
 const keys = new RSA(global.STORAGE.findOne({ entity: "privateKey" })?.value || generateKeyPair());
 
 function generateKeyPair () {
-    let _key = new RSA({b: 1024}).exportKey();
+    let _key = new RSA({b: 2048}).exportKey();
     global.STORAGE.insertOne({ entity: "privateKey", value: _key});
     return _key;
 }
