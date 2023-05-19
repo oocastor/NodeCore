@@ -1,8 +1,8 @@
 import "./database.js";
 import { createNewUser } from "./auth.js";
-import { initGreenlock } from "../modules/proxy.module.js";
+import fs from "fs";
 
-//*** RUN ON FIRST START ***
+// *** RUN ON FIRST START ***
 if (!global.CONFIG.findOne({ entity: "firstSetupDone" })) {
 
     // *** CREATE VARS ***
@@ -16,7 +16,10 @@ if (!global.CONFIG.findOne({ entity: "firstSetupDone" })) {
 
     // *** CREATE INIT LOGIN  ***
     createNewUser("nodeup", "nodeup");
+
+    // *** CREATE INSTANCE DIR ***
+    fs.mkdirSync("/home/node-up");
 }
 
-//*** RUN EVERY START ***
+// *** RUN EVERY START ***
 global.ENTITIES.updateMany({ type: "instance" }, { status: 0 });

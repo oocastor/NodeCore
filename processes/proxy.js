@@ -60,12 +60,12 @@ function getTargetByDomain(host) {
     let found;
     if (address.length == 2) {
         //example.de
-        found = global.ENTITES.findOne({ type: "instance", network: { redirect: { domain: address[0], sub: "@" } } }) ||
-            global.ENTITES.findOne({ type: "redirect", network: { domain: address[0], sub: "@" } });
+        found = global.ENTITIES.findOne({ type: "instance", network: { redirect: { domain: `${address[0]}.${address[1]}`, sub: "@" } } }) ||
+            global.ENTITIES.findOne({ type: "redirect", network: { domain: `${address[0]}.${address[1]}`, sub: "@" } });
     } else if(address.length == 3) {
         // *.example.de
-        found = global.ENTITES.findOne({ type: "instance", network: { redirect: { domain: address[1], sub: address[0] } } }) ||
-            global.ENTITES.findOne({ type: "redirect", network: { domain: address[1], sub: address[0] } });
+        found = global.ENTITIES.findOne({ type: "instance", network: { redirect: { domain: `${address[1]}.${address[2]}`, sub: address[0] } } }) ||
+            global.ENTITIES.findOne({ type: "redirect", network: { domain: `${address[1]}.${address[2]}`, sub: address[0] } });
     }
 
     if(!found) return "undefined"; //force an error
