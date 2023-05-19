@@ -6,10 +6,11 @@ import { runCmd } from '../utils/cmd.js';
 
 import { wait } from "../helper/wait.helper.js";
 import { getPackageJSON } from '../helper/instance.helper.js';
-
 import { isEqual, deepCopy } from '../helper/object.helper.js';
 
 import { restartProcess, createProcess, stopProcess, deleteProcess } from '../utils/pm2.js';
+
+import { addOrUpdateDomain } from './proxy.module.js';
 
 async function createInstance(data, id) {
     return new Promise(async (res, rej) => {
@@ -59,7 +60,12 @@ async function createInstance(data, id) {
                 }
             });
 
+        console.log(data);
+
         //TODO: reload proxy
+        if(data.network.isAccessable) {
+            addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain);
+        }
 
         res({ error: false, msg: `Instance successfully created` });
     });
@@ -140,6 +146,11 @@ async function runInstanceAction(data) {
                 acc[key] = value;
                 return acc;
             }, {});
+
+            //set port if instance is accessable
+            if(instance.network.isAccessable) {
+                env["PORT"] = instance.network.redirect.port;
+            }
 
             let creation = await createProcess({
                 cwd: `${path}/${instance._id}/`, script: instance.script, name: instance._id, env,

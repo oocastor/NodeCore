@@ -1,6 +1,5 @@
 import { domainIsUnused, nameIsUnused, portIsUnused } from "../utils/entities-promise.js";
 import { createInstance, updateInstance, deleteInstance, runInstanceAction } from "../modules/instance.module.js";
-import { addPM2Data } from "../helper/pm2.helper.js";
 
 import { hasAllProperties } from "../helper/object.helper.js";
 
@@ -15,6 +14,9 @@ global.SE.on("instance:write", async (data, ack, id) => {
 
     //delete method prop
     delete data.method;
+
+    //delete pm2 data
+    delete data.pm2;
 
     let scopes = [];
 
@@ -94,7 +96,7 @@ global.SE.on("instance:get", async (data, ack) => {
     }
 
     let { _id } = data;
-    let instance = await addPM2Data(global.ENTITIES.findOne({ type: "instance", _id }));
+    let instance = global.ENTITIES.findOne({ type: "instance", _id });
     ack({ error: false, msg: "Fetched instance entity", payload: instance });
 });
 

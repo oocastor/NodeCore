@@ -1,9 +1,7 @@
 import { listProcesses } from "../utils/pm2.js";
 import { readFileWithMaxLines } from "./file.helper.js";
 
-let pm2Data = [];
-
-async function getPM2Data() {
+async function syncPM2Data() {
     let path = global.CONFIG.findOne({ entity: "path" }).value;
     let list = await listProcesses();
     if (list.error) {
@@ -12,30 +10,33 @@ async function getPM2Data() {
     }
 
     for (let l of list.payload) {
-        if (global.ENTITIES.findOne({ _id: l.name })) {
-            l.log = await readFileWithMaxLines(`${path}/${l.name}/${l.name}.log`, 100);
+        let match = global.ENTITIES.findOne({ _id: l.name })
+        if (match) {
+            //get log data
+            let log = await readFileWithMaxLines(`${path}/${l.name}/${l.name}.log`, 75);
+
+            //transform monit data
+            let monit = { memory: (l.monit.memory / (1024 * 1024 * 1024)).toFixed(2), cpu: l.monit.cpu };
+
+            //change instance status
+            let pm2Status = l.pm2_env.status;
+            let status = null;
+
+            if(match.status <= 1) {
+                if(pm2Status == "online") {
+                    status = 1;
+                } else if(pm2Status == "stopped") {
+                    status = 0;
+                } else if(pm2Status == "errored") {
+                    status = -1;
+                }
+            }
+
+            if(status != null) global.ENTITIES.updateOne({ _id: l.name }, { status });
+
+            match.pm2 = { monit, log };
         }
     }
-
-    pm2Data = list.payload;
 }
 
-setInterval(getPM2Data, global.CONFIG.findOne({ entity: "pm2UpdateInterval" }) || 2000);
-
-async function addPM2Data(instance) {
-    //find process data
-    let pm2 = pm2Data.find(f => f.name == instance._id);
-
-    if (pm2) {
-        //transform monit data
-        pm2.monit.memory = (pm2.monit.memory / (1024 * 1024 * 1024)).toFixed(2);
-
-        return { ...instance, pm2 };
-    }
-
-    return instance;
-}
-
-export {
-    addPM2Data
-}
+setInterval(syncPM2Data, global.CONFIG.findOne({ entity: "pm2UpdateInterval" })?.value || 2000);

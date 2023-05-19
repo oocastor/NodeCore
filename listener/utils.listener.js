@@ -3,6 +3,8 @@ import fs from "fs";
 import { getUnusedPort } from "../utils/entities.js";
 import { getUserRepos } from "../utils/github.js";
 import { deleteUser, createNewUser } from "../bin/auth.js";
+import { hasAllProperties } from "../helper/object.helper.js";
+import { initGreenlock, stopProxyInstance } from "../modules/proxy.module.js";
 
 global.SE.on("path:get", async (ack) => {
     let { value } = global.CONFIG.findOne({ entity: "path" });
@@ -10,7 +12,7 @@ global.SE.on("path:get", async (ack) => {
 });
 
 global.SE.on("path:set", async (data, ack) => {
-    if(!data?.path) {
+    if (!data?.path) {
         ack({ error: true, msg: "Cannot change path - input incomplete.", payload: null });
         return;
     }
@@ -18,7 +20,7 @@ global.SE.on("path:set", async (data, ack) => {
         ack({ error: true, msg: "Cannot change path - there are already running intances!", payload: null });
         return;
     }
-    
+
     let { path } = data;
 
     //create dir
@@ -31,7 +33,7 @@ global.SE.on("path:set", async (data, ack) => {
 });
 
 global.SE.on("account:set", async (data, ack) => {
-    if(!data?.user || !data?.pwd) {
+    if (!data?.user || !data?.pwd) {
         ack({ error: true, msg: "Cannot change login data - input incomplete.", payload: null });
         return;
     }
@@ -56,14 +58,36 @@ global.SE.on("github:set", async (data, ack) => {
 
 global.SE.on("github:repos", async (ack) => {
     let repos = await getUserRepos();
-    if(!repos.length) {
+    if (!repos.length) {
         ack({ error: true, msg: "No github user repos found", payload: null });
         return;
     }
     ack({ error: false, msg: "Github user repos fetched", payload: repos });
 });
 
+global.SE.on("proxy:get", async (ack) => {
+    let proxy = global.CONFIG.findOne({ entity: "proxy" }).value;
+    ack({ error: false, msg: "Proxy configuration fetched", payload: proxy });
+});
+
+global.SE.on("proxy:set", async (data, ack) => {
+    if(!hasAllProperties(data, ["enabled", "maintainerEmail", "cluster", "workers"])) {
+        ack({ error: true, msg: "Cannot change proxy configuration - input data incomplete", payload: null });
+        return;
+    }
+
+    //init greenlock
+    if(data.enabled) initGreenlock(data)
+    else await stopProxyInstance().catch((err) => ack(err));
+
+    ack({ error: false, msg: "Proxy configuration updated", payload: null });
+});
+
 global.SE.on("domain:add", async (data, ack) => {
+    if (!data.domain) {
+        ack({ error: true, msg: "Cannot add domain - input data incomplete", payload: null });
+        return;
+    }
     let { domain } = data;
     let { value } = global.CONFIG.findOne({ entity: "domains" });
     value.push(domain);
