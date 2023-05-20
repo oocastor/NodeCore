@@ -14,7 +14,7 @@ function cloneRepo(repo, dir) {
             }
         }});
         let github = await global.CONFIG.findOne({ entity: "github" }).value;
-        if(github.user == "" || github.pat == "") {
+        if(github.pat == "") {
             res({error: true, msg: "No github account credentials given", payload: null});
             return;
         }
