@@ -10,7 +10,7 @@ import { isEqual, deepCopy } from '../helper/object.helper.js';
 
 import { restartProcess, createProcess, stopProcess, deleteProcess } from '../utils/pm2.js';
 
-import { addOrUpdateDomain } from './proxy.module.js';
+import { addOrUpdateDomain } from '../utils/acme.js';
 
 async function createInstance(data, id) {
     return new Promise(async (res, rej) => {
@@ -62,8 +62,8 @@ async function createInstance(data, id) {
 
         console.log(data);
 
-        //TODO: reload proxy
-        if(data.network.isAccessable) {
+        //create ssl certificates
+        if (data.network.isAccessable) {
             addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain);
         }
 
@@ -148,7 +148,7 @@ async function runInstanceAction(data) {
             }, {});
 
             //set port if instance is accessable
-            if(instance.network.isAccessable) {
+            if (instance.network.isAccessable) {
                 env["PORT"] = instance.network.redirect.port;
             }
 

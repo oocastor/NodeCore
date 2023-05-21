@@ -19,6 +19,9 @@ if (!global.CONFIG.findOne({ entity: "firstSetupDone" })) {
 
     // *** CREATE INSTANCE DIR ***
     fs.mkdirSync("/home/node-up");
+
+    fs.mkdirSync("data");
+    fs.mkdirSync("certs");
 }
 
 // *** RUN EVERY START ***
