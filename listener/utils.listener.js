@@ -4,7 +4,6 @@ import { getUnusedPort } from "../utils/entities.js";
 import { getUserRepos } from "../utils/github.js";
 import { deleteUser, createNewUser } from "../bin/auth.js";
 import { hasAllProperties } from "../helper/object.helper.js";
-import { initGreenlock, stopProxyInstance } from "../modules/proxy.module.js";
 
 global.SE.on("path:get", async (ack) => {
     let { value } = global.CONFIG.findOne({ entity: "path" });
@@ -76,9 +75,7 @@ global.SE.on("proxy:set", async (data, ack) => {
         return;
     }
 
-    //init greenlock
-    if(data.enabled) initGreenlock(data)
-    else await stopProxyInstance().catch((err) => ack(err));
+    global.CONFIG.updateOne({ entity: "proxy" }, { value: data });
 
     ack({ error: false, msg: "Proxy configuration updated", payload: null });
 });

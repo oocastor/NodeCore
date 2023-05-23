@@ -1,7 +1,8 @@
 import acme from "acme-client";
-import fs from "fs";
+import fs from "fs-extra";
 
 async function challengeCreateFn(authz, challenge, keyAuthorization) {
+    console.log(challenge, keyAuthorization)
     if (challenge.type === 'http-01') {
         // const filePath = `/var/www/html/.well-known/acme-challenge/${challenge.token}`;
         global.ACME = {
@@ -26,7 +27,7 @@ async function getAccountKey() {
     //create account key if no one found
     if (key == undefined) {
         key = await acme.crypto.createPrivateKey();
-        global.STORAGE.insertOne({ entity: "acmeClientKey", value: key })
+        global.STORAGE.insertOne({ entity: "acmeClientKey", value: key.toString() })
     }
 
     return key;
@@ -34,17 +35,17 @@ async function getAccountKey() {
 
 let _client = null;
 async function initClient() {
-    if (!_client) {
+    if (_client == null) {
         _client = new acme.Client({
             directoryUrl: acme.directory.letsencrypt.staging,
-            accountKey: getAccountKey()
+            accountKey: await getAccountKey()
         });
     }
     return _client;
 }
 
 async function waitForIt() {
-    while (global.ACME.token !== "") {
+    while (!global?.ACME?.token || global?.ACME?.token !== "") {
         await new Promise(resolve => setTimeout(resolve, 500));
     }
 }
@@ -71,9 +72,9 @@ async function addOrUpdateDomain(_subdomain, _domain) {
             let foundedSubdomains = [...instances, ...redirects];
 
             //wait if acme challenge is currently running!
-            waitForIt();
+            //await waitForIt();
 
-            let client = initClient();
+            let client = await initClient();
 
             let [key, csr] = await acme.crypto.createCsr({
                 commonName: _domain,
@@ -90,8 +91,8 @@ async function addOrUpdateDomain(_subdomain, _domain) {
 
             let path = `${process.cwd()}/certs/${_domain}`;
 
-            fs.mkdirSync(path, (err) => new Error(err));
-            fs.writeFileSync(`${path}/cert.json`, JSON.stringify({ key, cert, csr }), (err) => new Error(err));
+            fs.ensureDirSync(path, (err) => new Error(err));
+            fs.writeJsonSync(`${path}/cert.json`, { key: key.toString(), cert: cert.toString(), csr: csr.toString() }, (err) => new Error(err));
 
             res({ error: false, msg: "Certifcate successfully created or updated", payload: null });
         } catch (err) {
