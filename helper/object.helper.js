@@ -1,22 +1,22 @@
-function hasAllProperties(obj, props) {
-  let check = (obj) => {
-    let objProps = [];
+function hasAllProperties(_obj, props) {
 
+  let check = (obj, prefix = "") => {
+    let objProps = [];
     for (let o in obj) {
       if (obj[o] === undefined || obj[o] === null || obj[o] === "") continue;
-      if (typeof obj[o] !== "object") {
-        objProps.push(o);
-      } else {
-        objProps.push(o);
-        objProps = objProps.concat(check(obj[o]));
+      if (typeof obj[o] === "object") {
+        objProps = objProps.concat(check(obj[o], prefix ? `${prefix}.${o}` : o));
       }
+      objProps.push(prefix ? `${prefix}.${o}` : o);
     }
     return objProps;
   };
-  return props.reduce((a, r) => a = !check(obj).includes(r) ? false : a, true);
+
+  let res = check(_obj);
+  return props.reduce((a, r) => a = !res.includes(r) ? false : a, true);
 }
 
-function deepCopy (obj) {
+function deepCopy(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 

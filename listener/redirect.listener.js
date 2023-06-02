@@ -1,40 +1,55 @@
-import { domainIsUnused, nameIsUnused } from "../utils/entities.js";
-import { addOrUpdateDomain } from '../utils/acme.js';
+import { domainIsUnused, nameIsUnused } from "../utils/entities-promise.js";
+import { createRedirect, updateRedirect, deleteRedirect } from "../modules/redirect.module.js";
+import { hasAllProperties } from "../helper/object.helper.js";
 
 global.SE.on("redirect:write", async (data, ack, id) => {
-    if (data?.status == undefined || !data?.name || !data?.network?.sub || !data?.network?.domain || !data?.network?.port || isNaN(!data?.network?.port)) {
+    if(!hasAllProperties(data, ["status", "name", "method", "network", "network.sub", "network.domain", "network.port"])) {
         ack({ error: true, msg: "Input data incomplete or invalid" });
         return;
     }
 
-    //delete old entity by _id
-    let target;
-    if (data?._id) {
-        target = global.ENTITIES.findOne({ _id: data._id });
-        global.ENTITIES.deleteOne(target);
+    let { _id, status, name, network, method } = data;
+
+    //delete method prop
+    delete data.method;
+
+    let scopes = [];
+
+    if (method == "CREATE") {
+        scopes = [nameIsUnused(name), domainIsUnused(network.sub, network.domain)];
+    } else if (method == "UPDATE") {
+        let old = global.ENTITIES.findOne({ _id });
+
+        //name changed, add to scope
+        if (old.name != name) scopes.push(nameIsUnused(name))
+        //(sub)domain changed, add to scope
+        else if (old.network.sub != network.sub
+            || old.network.domain != network.domain) scopes.push(domainIsUnused(network.sub, network.domain));
     }
 
-    //name is unused
-    if (await nameIsUnused(data.name)) {
-        if (await domainIsUnused(data.network.sub, data.network.domain)) {
-            //insert new entity
-            global.ENTITIES.insertOne({ type: "redirect", ...data });
-            //TODO: reload proxy
-            addOrUpdateDomain(data.network.sub, data.network.domain).catch(err => {
-                global.IO.to(id).emit("msg:get", err);
-                console.error(err);
-            });
-            ack({ error: false, msg: `Redirect successfully ${!data._id ? "created" : "updated"}` });
+    //check if all scopes passed
+    Promise.allSettled(scopes).then((res) => {
+        let errs = res.filter(f => f.status == "rejected").map(m => m.reason);
+
+        if (errs.length) {
+            let msgs = errs.map(m => m.msg);
+            errs[0].msg = msgs;
+            ack(errs[0]);
             return;
-        } else {
-            ack({ error: true, msg: "Domain already used" });
         }
-    } else {
-        ack({ error: true, msg: "Name already used" });
-    }
 
-    //insert old entity back if something goes wrong
-    if (target) global.ENTITIES.insertOne(target);
+        if (method == "CREATE") {
+
+            /** CREATE NEW REDIRECT */
+            createRedirect(data, id).then((res) => ack(res)).catch((err) => ack(err));
+
+        } else if (method == "UPDATE") {
+
+            /** UPDATE EXISTING PROCESS */
+            updateRedirect(data, id).then((res) => ack(res)).catch((err) => ack(err));
+
+        }
+    }).catch((e) => console.error(e));
 });
 
 global.SE.on("redirect:list", (ack) => {
@@ -44,12 +59,10 @@ global.SE.on("redirect:list", (ack) => {
 });
 
 global.SE.on("redirect:delete", (data, ack) => {
-    if (!data?._id) {
+    if (!hasAllProperties(data, ["_id"])) {
         ack({ error: true, msg: "Cannot delete redirect, no _id given.", payload: null });
         return;
     }
 
-    let { _id } = data;
-    global.ENTITIES.deleteOne({ _id });
-    ack({ error: false, msg: "Redirect successfully deleted", payload: null });
+    deleteRedirect(data).then((res) => ack(res));
 });

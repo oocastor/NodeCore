@@ -4,8 +4,8 @@ import { createInstance, updateInstance, deleteInstance, runInstanceAction } fro
 import { hasAllProperties } from "../helper/object.helper.js";
 
 global.SE.on("instance:write", async (data, ack, id) => {
-    if (!hasAllProperties(data, ["status", "name", "env", "cmd", "git", "network", "isAccessable", "method"])
-        || data.network.isAccessable == true && !hasAllProperties(data, ["redirect", "sub", "domain", "port"])) {
+    if (!hasAllProperties(data, ["status", "name", "env", "cmd", "git", "network", "network.isAccessable", "method"])
+        || data.network.isAccessable == true && !hasAllProperties(data, ["network.redirect", "network.redirect.sub", "network.redirect.domain", "network.redirect.port"])) {
         ack({ error: true, msg: "Input data incomplete or invalid" });
         return;
     }

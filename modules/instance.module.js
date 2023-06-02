@@ -87,6 +87,9 @@ function updateInstance(data, id) {
         //update entity
         global.ENTITIES.updateOne({ _id: data._id }, { ...data });
 
+        //delete port
+        delete data.network.redirect.port;
+
         //create ssl cert on network config change
         if (data.network.isAccessable && !isEqual(data.network.redirect, old.network.redirect)) {
             addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain).catch(err => {
