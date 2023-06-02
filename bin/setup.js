@@ -1,6 +1,6 @@
 import "./database.js";
 import { createNewUser } from "./auth.js";
-import fs from "fs";
+import fs from "fs-extra";
 
 // *** RUN ON FIRST START ***
 if (!global.CONFIG.findOne({ entity: "firstSetupDone" })) {
@@ -18,9 +18,9 @@ if (!global.CONFIG.findOne({ entity: "firstSetupDone" })) {
     createNewUser("nodeup", "nodeup");
 
     // *** CREATE INSTANCE DIR ***
-    fs.mkdirSync("/home/node-up");
+    fs.ensureDirSync("/home/node-up");
 
-    fs.mkdirSync("certs");
+    fs.ensureDirSync("certs");
 }
 
 // *** RUN EVERY START ***
