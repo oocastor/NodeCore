@@ -88,7 +88,7 @@ function updateInstance(data, id) {
         global.ENTITIES.updateOne({ _id: data._id }, { ...data });
 
         //create ssl cert on network config change
-        if (data.network.isAccessable && data.network.redirect.sub == old.network.redirect.sub || data.network.redirect.domain == old.network.redirect.domain) {
+        if (data.network.isAccessable && data.network.redirect.sub !== old.network.redirect.sub || data.network.redirect.domain !== old.network.redirect.domain) {
             addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain).catch(err => {
                 global.IO.to(id).emit("msg:get", err);
                 console.error(err);

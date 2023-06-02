@@ -4,7 +4,7 @@ import fs from "fs-extra";
 let challengeActive = false;
 
 async function challengeCreateFn(authz, challenge, keyAuthorization) {
-    console.log(challenge, keyAuthorization)
+    // console.log(challenge, keyAuthorization)
     try {
         if (challenge.type === 'http-01') {
             global.sendToWorkers("updateACME", {
@@ -19,7 +19,7 @@ async function challengeCreateFn(authz, challenge, keyAuthorization) {
 }
 
 async function challengeRemoveFn(authz, challenge, keyAuthorization) {
-    console.log(challenge, keyAuthorization)
+    // console.log(challenge, keyAuthorization)
     try {
         if (challenge.type === 'http-01') {
             global.sendToWorkers("updateACME", {

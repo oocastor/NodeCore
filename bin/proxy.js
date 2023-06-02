@@ -17,7 +17,6 @@ let ACME = {
 process.on("message", (data) => {
     data = JSON.parse(data);
     if (data.event == "updateACME") {
-        console.log(data.data);
         ACME = data.data;
     }
 });
