@@ -1,5 +1,7 @@
 import acme from "acme-client";
 import fs from "fs-extra";
+import { existsSync } from "fs";
+import { wait } from "../helper/wait.helper.js";
 
 let challengeActive = false;
 
@@ -59,7 +61,7 @@ async function initClient() {
 
 async function waitForIt() {
     while (challengeActive) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 5000));
         console.log("WAIT")
     }
 }
@@ -104,8 +106,10 @@ async function addOrUpdateDomain(_subdomain, _domain) {
                 challengeCreateFn,
                 challengeRemoveFn
             });
-            
-            fs.writeJsonSync(`${process.cwd()}/certs/${_domain}.json`, { key: key.toString(), cert: cert.toString(), csr: csr.toString(), altNames}, (err) => new Error(err));
+
+            let timestap = new Date().getTime();
+
+            fs.writeJsonSync(`${process.cwd()}/certs/${_domain}.json`, { key: key.toString(), cert: cert.toString(), csr: csr.toString(), altNames, timestap }, (err) => new Error(err));
 
             res({ error: false, msg: "Certifcate successfully created or updated", payload: null });
         } catch (err) {
@@ -114,6 +118,73 @@ async function addOrUpdateDomain(_subdomain, _domain) {
     });
 }
 
+async function updateDomainCerts(force = false) {
+    return new Promise(async (res, rej) => {
+        try {
+            let proxyConfig = global.CONFIG.findOne({ entity: "proxy" })?.value;
+
+            if (!proxyConfig || !proxyConfig.enabled) {
+                return;
+            }
+
+            let domains = global.CONFIG.findOne({ entity: "domains" }).value;
+
+            for (let _domain of domains) {
+                let filePath = `${process.cwd()}/certs/${_domain}.json`;
+                
+                if(!existsSync(filePath)) {
+                    console.log(`skipped ${_domain}, no cert file found`)
+                    continue;
+                }
+
+                let certFile = fs.readJSONSync(filePath);
+
+                if(((new Date().getTime() - certFile.timestap) / (24 * 60 * 60 * 1000)) < 30 && !force) {
+                    console.log(`skipped ${_domain}, cert not older then 30 days`)
+                    continue;
+                }
+
+                //wait if acme challenge is currently running!
+                await waitForIt();
+
+                let client = await initClient();
+
+                let altNames = certFile.altNames;
+
+                let [key, csr] = await acme.crypto.createCsr({
+                    commonName: _domain,
+                    altNames
+                });
+
+                let cert = await client.auto({
+                    csr,
+                    email: proxyConfig.maintainerEmail,
+                    termsOfServiceAgreed: true,
+                    challengeCreateFn,
+                    challengeRemoveFn
+                });
+
+                let timestap = new Date().getTime();
+
+                fs.writeJsonSync(`${process.cwd()}/certs/${_domain}.json`, { key: key.toString(), cert: cert.toString(), csr: csr.toString(), altNames, timestap }, (err) => new Error(err));
+
+                //wait 5 seconds
+                wait(5000);
+            }
+
+            res({ error: false, msg: "Certifcates successfully updated", payload: null });
+        } catch (err) {
+            rej({ error: true, msg: "Something went wrong while updating the ssl certs", payload: err })
+        }
+    });
+}
+
+//check certificates and update them if needed
+
+setTimeout(updateDomainCerts, 5000);
+setInterval(updateDomainCerts, 1000*60*120);
+
 export {
-    addOrUpdateDomain
+    addOrUpdateDomain,
+    updateDomainCerts
 }

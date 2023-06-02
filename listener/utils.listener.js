@@ -4,6 +4,7 @@ import { getUnusedPort } from "../utils/entities.js";
 import { getUserRepos } from "../utils/github.js";
 import { deleteUser, createNewUser } from "../bin/auth.js";
 import { hasAllProperties } from "../helper/object.helper.js";
+import { updateDomainCerts } from "../utils/acme.js";
 
 global.SE.on("path:get", async (ack) => {
     let { value } = global.CONFIG.findOne({ entity: "path" });
@@ -78,6 +79,14 @@ global.SE.on("proxy:set", async (data, ack) => {
     global.CONFIG.updateOne({ entity: "proxy" }, { value: data });
 
     ack({ error: false, msg: "Proxy configuration updated", payload: null });
+});
+
+global.SE.on("proxy:updateCerts", async (data, ack, id) => {
+    updateDomainCerts(data.force).catch((err) => {
+        global.IO.to(id).emit("msg:get", err);
+        console.error(err);
+    });
+    ack({ error: false, msg: "Cert-Update triggered", payload: null});
 });
 
 global.SE.on("domain:add", async (data, ack) => {

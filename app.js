@@ -32,6 +32,8 @@ if (cluster.isPrimary) {
     await import("./listener/redirect.listener.js");
     await import("./listener/instance.listener.js");
     await import("./listener/utils.listener.js");
+
+    await import("./utils/acme.js");
 } else if (cluster.isWorker) {
     //** PROXY WORKER */
     await import("./bin/proxy.js");
