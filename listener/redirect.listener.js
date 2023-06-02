@@ -45,7 +45,7 @@ global.SE.on("redirect:write", async (data, ack, id) => {
 
         } else if (method == "UPDATE") {
 
-            /** UPDATE EXISTING PROCESS */
+            /** UPDATE EXISTING REDIRECT */
             updateRedirect(data, id).then((res) => ack(res)).catch((err) => ack(err));
 
         }

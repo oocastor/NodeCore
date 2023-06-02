@@ -17,6 +17,7 @@ function createRedirect(data, id) {
 
 function updateRedirect(data, id) {
     return new Promise((res, rej) => {
+
         //save old entity
         let old = deepCopy(global.ENTITIES.findOne({ _id: data._id }));
 
@@ -29,7 +30,7 @@ function updateRedirect(data, id) {
         global.ENTITIES.updateOne({ _id: data._id }, { ...data });
 
         //delete port
-        delete data.network.redirect.port;
+        delete data.network.port;
 
         //create ssl cert on network config change
         if (data.network.sub !== old.network.sub || data.network.domain !== old.network.domain) {
