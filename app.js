@@ -5,7 +5,7 @@ const cores = cpus().length;
 
 if (cluster.isPrimary) {
     //** MASTER */
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < cores; i++) {
         cluster.fork();
     }
 
@@ -14,6 +14,12 @@ if (cluster.isPrimary) {
             worker.send(JSON.stringify({ event, data }));
         });
     }
+
+    cluster.on('exit', (worker, code, signal) => {
+        console.log(`worker ${worker.process.pid} died`);
+        console.log('start new worker...');
+        cluster.fork();
+    });
 
     await import("./bin/setup.js");
 
