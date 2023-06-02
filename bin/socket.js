@@ -7,7 +7,7 @@ const se = new EventEmitter();
 
 const io = new Server(https, {
     cors: {
-        origin: ["*"]
+        origin: ["http://localhost:8080"]
     }
 });
 
