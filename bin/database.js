@@ -1,4 +1,7 @@
 import Borgoose from "borgoose";
+import fs from "fs-extra";
+
+fs.emptyDirSync('data');
 
 global.USERS = new Borgoose('data/users.json', { syncOnWrite: true, createWithId: true });
 global.ENTITIES = new Borgoose('data/entities.json', { syncOnWrite: true, createWithId: true });
