@@ -2,6 +2,7 @@ import http from "http";
 import https from "https";
 import express from "express";
 import fs from "fs";
+import { ensureDirSync } from "fs-extra";
 import httpProxy from "http-proxy";
 import Borgoose from "borgoose";
 import cluster from "cluster";
@@ -52,6 +53,7 @@ const http_listener = _http.listen(80, () => {
 
 var _https = null;
 const path = `${process.cwd()}/certs`;
+ensureDirSync(path);
 
 createHttpsServer();
 
