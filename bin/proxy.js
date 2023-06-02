@@ -139,5 +139,5 @@ function getTargetByDomain(host) {
 
     if (!found) return "undefined"; //force an error
 
-    return `http://localhost:${found.network?.redirect.port || found.network.port}`
+    return `http://localhost:${found.network?.redirect?.port || found.network.port}`
 }

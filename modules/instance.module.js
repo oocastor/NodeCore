@@ -87,11 +87,8 @@ function updateInstance(data, id) {
         //update entity
         global.ENTITIES.updateOne({ _id: data._id }, { ...data });
 
-        //delete port
-        delete data.network.redirect.port;
-
         //create ssl cert on network config change
-        if (data.network.isAccessable && !isEqual(data.network.redirect, old.network.redirect)) {
+        if (data.network.isAccessable && data.network.redirect.sub == old.network.redirect.sub || data.network.redirect.domain == old.network.redirect.domain) {
             addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain).catch(err => {
                 global.IO.to(id).emit("msg:get", err);
                 console.error(err);
@@ -116,9 +113,11 @@ function updateInstance(data, id) {
                 });
         }
 
-        //restart instance if env vars or cmds changed
-        if (!isEqual(data.cmd, old.cmd) && old.status == 1
-            || !isEqual(data.env, old.env) && old.status == 1) {
+        //restart instance if env vars, cmds or port changed
+        if (old.status == 1 &&
+            !isEqual(data.cmd, old.cmd)
+            || !isEqual(data.env, old.env)
+            || data.network.redirect.port !== old.network.redirect.port) {
             runInstanceAction({ _id: data._id, status: 1 }).then(() => {
             }).catch((err) => {
                 global.IO.to(id).emit("msg:get", err);

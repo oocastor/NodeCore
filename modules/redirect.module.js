@@ -32,7 +32,7 @@ function updateRedirect(data, id) {
         delete data.network.redirect.port;
 
         //create ssl cert on network config change
-        if (!isEqual(data.network, old.network)) {
+        if (data.network.sub !== old.network.sub || data.network.domain !== old.network.domain) {
             addOrUpdateDomain(data.network.sub, data.network.domain).catch(err => {
                 global.IO.to(id).emit("msg:get", err);
                 console.error(err);
