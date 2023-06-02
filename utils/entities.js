@@ -13,7 +13,7 @@ function domainIsUnused(sub, domain) {
 function getUnusedPort() {
     let port = 0;
     while(port == 0 || !(portIsUnused(port))) {
-        port = Math.round(Math.random() * 9000) + 1000;
+        port = Math.round(Math.random() * 9000) + 1005;
     }
     return port;
 }

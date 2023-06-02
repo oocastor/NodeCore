@@ -1,23 +1,35 @@
 import acme from "acme-client";
 import fs from "fs-extra";
 
+let challengeActive = false;
+
 async function challengeCreateFn(authz, challenge, keyAuthorization) {
     console.log(challenge, keyAuthorization)
-    if (challenge.type === 'http-01') {
-        // const filePath = `/var/www/html/.well-known/acme-challenge/${challenge.token}`;
-        global.ACME = {
-            token: challenge.token,
-            keyAuthorization
-        };
+    try {
+        if (challenge.type === 'http-01') {
+            global.sendToWorkers("updateACME", {
+                token: challenge.token,
+                keyAuthorization
+            });
+            challengeActive = true;
+        }
+    } catch (err) {
+        console.log(err);
     }
 }
 
 async function challengeRemoveFn(authz, challenge, keyAuthorization) {
-    if (challenge.type === 'http-01') {
-        global.KEY = {
-            token: "",
-            keyAuthorization: ""
-        };
+    console.log(challenge, keyAuthorization)
+    try {
+        if (challenge.type === 'http-01') {
+            global.sendToWorkers("updateACME", {
+                token: "",
+                keyAuthorization: ""
+            });
+            challengeActive = false;
+        }
+    } catch (err) {
+        console.log(err);
     }
 }
 
@@ -37,7 +49,8 @@ let _client = null;
 async function initClient() {
     if (_client == null) {
         _client = new acme.Client({
-            directoryUrl: acme.directory.letsencrypt.staging,
+            directoryUrl: acme.directory.letsencrypt.production,
+            // directoryUrl: acme.directory.letsencrypt.staging,
             accountKey: await getAccountKey()
         });
     }
@@ -45,8 +58,9 @@ async function initClient() {
 }
 
 async function waitForIt() {
-    while (!global?.ACME?.token || global?.ACME?.token !== "") {
+    while (challengeActive) {
         await new Promise(resolve => setTimeout(resolve, 500));
+        console.log("WAIT")
     }
 }
 
@@ -72,13 +86,15 @@ async function addOrUpdateDomain(_subdomain, _domain) {
             let foundedSubdomains = [...instances, ...redirects];
 
             //wait if acme challenge is currently running!
-            //await waitForIt();
+            await waitForIt();
 
             let client = await initClient();
 
+            let altNames = [_domain, ...foundedSubdomains.map(m => `${m}.${_domain}`)];
+
             let [key, csr] = await acme.crypto.createCsr({
                 commonName: _domain,
-                altNames: [_domain, ...foundedSubdomains.map(m => `${m}.${_domain}`)]
+                altNames
             });
 
             let cert = await client.auto({
@@ -88,15 +104,12 @@ async function addOrUpdateDomain(_subdomain, _domain) {
                 challengeCreateFn,
                 challengeRemoveFn
             });
-
-            let path = `${process.cwd()}/certs/${_domain}`;
-
-            fs.ensureDirSync(path, (err) => new Error(err));
-            fs.writeJsonSync(`${path}/cert.json`, { key: key.toString(), cert: cert.toString(), csr: csr.toString() }, (err) => new Error(err));
+            
+            fs.writeJsonSync(`${process.cwd()}/certs/${_domain}.json`, { key: key.toString(), cert: cert.toString(), csr: csr.toString(), altNames}, (err) => new Error(err));
 
             res({ error: false, msg: "Certifcate successfully created or updated", payload: null });
         } catch (err) {
-            rej({ error: true, msg: "Something went wrong while creating the ssl certs", payload: null })
+            rej({ error: true, msg: "Something went wrong while creating the ssl certs", payload: err })
         }
     });
 }

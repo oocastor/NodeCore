@@ -64,7 +64,10 @@ async function createInstance(data, id) {
 
         //create ssl certificates
         if (data.network.isAccessable) {
-            addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain);
+            addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain).catch(err => {
+                global.IO.to(id).emit("msg:get", err);
+                console.error(err);
+            });
         }
 
         res({ error: false, msg: `Instance successfully created` });
@@ -84,9 +87,12 @@ function updateInstance(data, id) {
         //update entity
         global.ENTITIES.updateOne({ _id: data._id }, { ...data });
 
-        //reload proxy, on subdomain change
+        //create ssl cert on network config change
         if (data.network.isAccessable && !isEqual(data.network.redirect, old.network.redirect)) {
-            //TODO: reload proxy
+            addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain).catch(err => {
+                global.IO.to(id).emit("msg:get", err);
+                console.error(err);
+            });
         }
 
         //run start cmds again

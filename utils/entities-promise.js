@@ -19,7 +19,7 @@ function domainIsUnused(sub, domain) {
 async function getUnusedPort() {
     let port = 0;
     while (port == 0 || !await portIsUnused(port).error) {
-        port = Math.round(Math.random() * 9000) + 1000;
+        port = Math.round(Math.random() * 9000) + 1005;
     }
     return port;
 }

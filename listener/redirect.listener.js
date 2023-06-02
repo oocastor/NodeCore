@@ -1,6 +1,7 @@
 import { domainIsUnused, nameIsUnused } from "../utils/entities.js";
+import { addOrUpdateDomain } from '../utils/acme.js';
 
-global.SE.on("redirect:write", async (data, ack) => {
+global.SE.on("redirect:write", async (data, ack, id) => {
     if (data?.status == undefined || !data?.name || !data?.network?.sub || !data?.network?.domain || !data?.network?.port || isNaN(!data?.network?.port)) {
         ack({ error: true, msg: "Input data incomplete or invalid" });
         return;
@@ -19,6 +20,10 @@ global.SE.on("redirect:write", async (data, ack) => {
             //insert new entity
             global.ENTITIES.insertOne({ type: "redirect", ...data });
             //TODO: reload proxy
+            addOrUpdateDomain(data.network.sub, data.network.domain).catch(err => {
+                global.IO.to(id).emit("msg:get", err);
+                console.error(err);
+            });
             ack({ error: false, msg: `Redirect successfully ${!data._id ? "created" : "updated"}` });
             return;
         } else {
@@ -39,7 +44,7 @@ global.SE.on("redirect:list", (ack) => {
 });
 
 global.SE.on("redirect:delete", (data, ack) => {
-    if(!data?._id) {
+    if (!data?._id) {
         ack({ error: true, msg: "Cannot delete redirect, no _id given.", payload: null });
         return;
     }
