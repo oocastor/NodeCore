@@ -70,7 +70,7 @@ global.SE.on("proxy:get", async (ack) => {
 });
 
 global.SE.on("proxy:set", async (data, ack) => {
-    if(!hasAllProperties(data, ["enabled", "maintainerEmail", "cluster", "workers"])) {
+    if(!hasAllProperties(data, ["enabled", "maintainerEmail"])) {
         ack({ error: true, msg: "Cannot change proxy configuration - input data incomplete", payload: null });
         return;
     }
