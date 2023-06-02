@@ -7,8 +7,7 @@ const se = new EventEmitter();
 
 const io = new Server(https, {
     cors: {
-        origin: ["*"],
-        credentials: true,
+        origin: ["*"]
     }
 });
 
