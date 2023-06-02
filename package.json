@@ -4,7 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "serve": "nodemon ."
+    "serve": "nodemon .",
+    "postinstall": "git submodule update --init --remote"
   },
   "author": "",
   "license": "ISC",
