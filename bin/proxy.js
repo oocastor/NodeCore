@@ -38,12 +38,14 @@ app.use(redirectHttpToHttps);
 //** ACME -> for ssl cert creation */
 app.get("/.well-known/acme-challenge/:id", (req, res) => {
     let id = req.params.id;
+    let target = ACME.find(f => f.token == id);
 
-    if (id == ACME?.token) {
-        res.send(ACME.keyAuthorization)
-    } else {
-        res.send("Nothing to see here!")
+    if(target == undefined) {
+        res.send("Nothing to see here!");
+        return;
     }
+
+    res.send(target.keyAuthorization);
 });
 
 const http_listener = _http.listen(80, () => {
