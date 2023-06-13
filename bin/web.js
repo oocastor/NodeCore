@@ -1,17 +1,19 @@
-import { createServer } from "http";
+import AutoEncryptLocalhost from "@small-tech/auto-encrypt-localhost";
 import express from "express";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-const https = createServer(app);
+const https = AutoEncryptLocalhost.https.createServer(app);
 
 app.use(express.static('gui/dist'));
 
-const listener = https.listen(1001, () => {
-    console.log(`web/socket server running on port ${listener.address().port}`)
+https.listen(process.env.PORT, () => {
+    console.log(`web/socket server running on port ${process.env.PORT}`)
 });
 
 export {
     app,
-    https,
-    listener
+    https
 }
