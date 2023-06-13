@@ -10,15 +10,16 @@ import cluster from "cluster";
 //** HTTP */
 const app = express();
 const _http = http.createServer(app);
-let ACME = {
-    token: "",
-    keyAuthorization: ""
-}
+let ACME = []
 
 process.on("message", (data) => {
     data = JSON.parse(data);
     if (data.event == "updateACME") {
-        ACME = data.data;
+        if(data.data.add) {
+            ACME.push(data.data.add);
+        } else if(data.data.delete) {
+            ACME = ACME.filter(o => o.token != data.data.delete.token);
+        }
     }
 });
 
