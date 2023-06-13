@@ -72,6 +72,7 @@ async function addOrUpdateDomain(_subdomain, _domain) {
             let proxyConfig = global.CONFIG.findOne({ entity: "proxy" })?.value;
 
             if (!proxyConfig || !proxyConfig.enabled) {
+                rej({ error: true, msg: "Cannot create ssl cert - enable proxy first!", payload: null });
                 return;
             }
 
@@ -113,7 +114,7 @@ async function addOrUpdateDomain(_subdomain, _domain) {
 
             res({ error: false, msg: "Certifcate successfully created or updated", payload: null });
         } catch (err) {
-            rej({ error: true, msg: "Something went wrong while creating the ssl certs", payload: err })
+            rej({ error: true, msg: "Something went wrong while creating the ssl certs", payload: err });
         }
     });
 }
