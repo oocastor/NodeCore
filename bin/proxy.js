@@ -78,7 +78,7 @@ function createHttpsServer() {
 
     if (certs.length == 0 || _https != null) return;
 
-    let proxy = httpProxy.createProxyServer({ xfwd: true });
+    let proxy = httpProxy.createProxyServer({ xfwd: true, secure: false });
     _https = https.createServer(certs[0].data, (req, res) => {
         let ip = req.socket.remoteAddress;
         let target = getTargetByDomain(req.headers.host);
