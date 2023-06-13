@@ -1,8 +1,5 @@
 import AutoEncryptLocalhost from "@small-tech/auto-encrypt-localhost";
 import express from "express";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const app = express();
 const https = AutoEncryptLocalhost.https.createServer(app);

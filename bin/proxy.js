@@ -140,5 +140,10 @@ function getTargetByDomain(host) {
 
     if (!found) return "undefined"; //force an error
 
-    return `http://localhost:${found.network?.redirect?.port || found.network.port}`
+    let port = found.network?.redirect?.port || found.network.port;
+
+    //redirect NodeCore to https
+    if(port == process.env.PORT) return `https://localhost:${port}`
+
+    return `http://localhost:${port}`
 }

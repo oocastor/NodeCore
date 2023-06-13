@@ -1,5 +1,7 @@
 import cluster from "cluster";
 import { cpus } from "os";
+import dotenv from "dotenv";
+dotenv.config();
 
 const cores = cpus().length;
 
