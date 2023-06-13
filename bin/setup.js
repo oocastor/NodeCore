@@ -15,7 +15,7 @@ if (!global.CONFIG.findOne({ entity: "firstSetupDone" })) {
     global.CONFIG.insertOne({ entity: "firstSetupDone", value: true });
 
     // *** CREATE INIT LOGIN  ***
-    createNewUser("nodeup", "nodeup");
+    createNewUser("nodecore", "nodecore");
 
     // *** CREATE INSTANCE DIR ***
     fs.ensureDirSync("/home/node-up");
