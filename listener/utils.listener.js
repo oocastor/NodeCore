@@ -76,6 +76,12 @@ global.SE.on("proxy:set", async (data, ack) => {
         return;
     }
 
+    if(data.enabled) {
+        global.spawnWorkers();
+    } else {
+        global.killAllWorkers();
+    }
+
     global.CONFIG.updateOne({ entity: "proxy" }, { value: data });
 
     ack({ error: false, msg: "Proxy configuration updated", payload: null });

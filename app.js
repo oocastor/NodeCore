@@ -7,21 +7,6 @@ const cores = cpus().length;
 
 if (cluster.isPrimary) {
     //** MASTER */
-    for (let i = 0; i < cores; i++) {
-        cluster.fork();
-    }
-
-    global.sendToWorkers = (event, data) => {
-        Object.values(cluster.workers).forEach((worker) => {
-            worker.send(JSON.stringify({ event, data }));
-        });
-    }
-
-    cluster.on('exit', (worker, code, signal) => {
-        console.log(`worker ${worker.process.pid} died`);
-        console.log('start new worker...');
-        cluster.fork();
-    });
 
     await import("./bin/setup.js");
 
@@ -36,6 +21,45 @@ if (cluster.isPrimary) {
     await import("./listener/utils.listener.js");
 
     await import("./utils/acme.js");
+
+    let restartWorkers = false;
+
+    global.spawnWorkers = () => {
+        restartWorkers = true;
+        let workerCount = cores - Object.keys(cluster.workers).length;
+        for (let i = 0; i < workerCount; i++) {
+            cluster.fork();
+        }
+    }
+
+    global.killAllWorkers = () => {
+        restartWorkers = false;
+        Object.values(cluster.workers).forEach((worker) => {
+            worker.kill();
+        });
+    }
+
+    global.sendToWorkers = (event, data) => {
+        Object.values(cluster.workers).forEach((worker) => {
+            worker.send(JSON.stringify({ event, data }));
+        });
+    }
+
+    cluster.on('exit', (worker, code, signal) => {
+        console.log(`worker ${worker.process.pid} died`);
+        if (restartWorkers) {
+            console.log('start new worker...');
+            cluster.fork();
+        }
+    });
+
+    //start workers if proxy is enabled
+    let proxy = global.CONFIG.findOne({ entity: "proxy" });
+
+    if (proxy.value.enabled) {
+        global.spawnWorkers();
+    }
+
 } else if (cluster.isWorker) {
     //** PROXY WORKER */
     await import("./bin/proxy.js");
