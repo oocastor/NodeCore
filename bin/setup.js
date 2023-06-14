@@ -18,7 +18,7 @@ if (!global.CONFIG.findOne({ entity: "firstSetupDone" })) {
     createNewUser("nodecore", "nodecore");
 
     // *** CREATE INSTANCE DIR ***
-    fs.ensureDirSync("/home/node-up");
+    fs.ensureDirSync("/home/nodecore-instances");
 
     fs.ensureDirSync("certs");
 }
