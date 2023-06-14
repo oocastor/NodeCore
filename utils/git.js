@@ -13,12 +13,18 @@ function cloneRepo(repo, dir) {
                 return;
             }
         }});
-        let github = await global.CONFIG.findOne({ entity: "github" }).value;
-        if(github.pat == "") {
-            res({error: true, msg: "No github account credentials given", payload: null});
-            return;
+        if(repo.extern == false || repo.extern == undefined) {
+            //private repos
+            let github = await global.CONFIG.findOne({ entity: "github" }).value;
+            if(github.pat == "") {
+                res({error: true, msg: "No github account credentials given", payload: null});
+                return;
+            }
+            await git.clone(`https://${github.pat}@${repo.uri.replace("https://", "")}`, dir);
+        } else {
+            //external repos
+            await git.clone(repo.uri, dir);
         }
-        await git.clone(`https://${github.pat}@${repo.uri.replace("https://", "")}`, dir);
     });
 }
 
