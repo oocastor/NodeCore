@@ -37,7 +37,7 @@ async function createInstance(data, id) {
             return;
         }
 
-        data.script = packageJSON.payload.main;
+        data.script = data.script || packageJSON.payload.main;
         data.version = packageJSON.payload.version;
         data.pm2CreationDone = false;
 
