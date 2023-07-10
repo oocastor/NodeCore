@@ -123,3 +123,9 @@ global.SE.on("domain:list", async (ack) => {
 global.SE.on("port:get", async (ack) => {
     ack({ error: false, msg: "Unused port created", payload: await getUnusedPort() });
 });
+
+global.SE.on("network:ready", async (ack) => {
+    let proxy = global.CONFIG.findOne({ entity: "proxy" }).value.enabled;
+    let domains = global.CONFIG.findOne({ entity: "domains" }).value.length > 0;
+    ack({ error: false, msg: "Checked network status", payload: proxy && domains });
+});

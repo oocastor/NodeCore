@@ -10,6 +10,7 @@ if (!global.CONFIG.findOne({ entity: "firstSetupDone" })) {
     global.CONFIG.insertOne({ entity: "github", value: { pat: "" } });
     global.CONFIG.insertOne({ entity: "path", value: "/home/nodecore-instances" });
     global.CONFIG.insertOne({ entity: "pm2UpdateInterval", value: 2000 });
+    global.CONFIG.insertOne({ entity: "sysInfoUpdateInterval", value: 2000 });
     global.CONFIG.insertOne({ entity: "proxy", value: { enabled: false, subscriberEmail: "", cluster: false, workers: 1, pid: "" } });
 
     global.CONFIG.insertOne({ entity: "firstSetupDone", value: true });

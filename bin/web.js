@@ -4,7 +4,13 @@ import { createServer } from "https";
 
 const app = express();
 const cert = AutoEncryptLocalhost.getKeyMaterial();
+
 const https = createServer(cert, app);
+
+/** DEBUG */
+// import { createServer } from "http";
+// const https = createServer(app);
+/** END */
 
 app.use(express.static('gui/dist'));
 
