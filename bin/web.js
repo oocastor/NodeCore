@@ -1,15 +1,15 @@
 import AutoEncryptLocalhost from "@small-tech/auto-encrypt-localhost";
 import express from "express";
-import { createServer } from "https";
+// import { createServer } from "https";
 
 const app = express();
 const cert = AutoEncryptLocalhost.getKeyMaterial();
 
-const https = createServer(cert, app);
+// const https = createServer(cert, app);
 
 /** DEBUG */
-// import { createServer } from "http";
-// const https = createServer(app);
+import { createServer } from "http";
+const https = createServer(app);
 /** END */
 
 app.use(express.static('gui/dist'));

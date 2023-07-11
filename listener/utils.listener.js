@@ -129,3 +129,43 @@ global.SE.on("network:ready", async (ack) => {
     let domains = global.CONFIG.findOne({ entity: "domains" }).value.length > 0;
     ack({ error: false, msg: "Checked network status", payload: proxy && domains });
 });
+
+global.SE.on("tags:add", async (data, ack) => {
+    if(!hasAllProperties(data, ["tag"])) {
+        ack({ error: true, msg: "Cannot add empty tag", payload: null });
+        return;
+    }
+
+    let tags = global.CONFIG.findOne({ entity: "tags" }).value;
+
+    if(tags.includes(data.tag)) {
+        ack({ error: true, msg: "Tag already exists", payload: null });
+        return;
+    }
+
+    global.CONFIG.updateOne({ entity: "tags" }, { value: [...tags, data.tag] });
+
+    ack({ error: false, msg: "New tag saved", payload: null });
+});
+
+global.SE.on("tags:get", async (ack) => {
+    let tags = global.CONFIG.findOne({ entity: "tags" }).value;
+    ack({ error: false, msg: "Fetched tags", payload: tags });
+});
+
+global.SE.on("tags:delete", async (data, ack) => {
+    if(!hasAllProperties(data, ["tag"])) {
+        ack({ error: true, msg: "Cannot delete tag", payload: null });
+        return;
+    }
+
+    //remove tag from all instances
+    global.ENTITIES.findMany({ type : "instance" })
+    .forEach(inst => inst.tags = inst.tags.filter(f => f !== data.tag));
+
+    let tags = global.CONFIG.findOne({ entity: "tags" }).value;
+
+    global.CONFIG.updateOne({ entity: "tags" }, { value: tags.filter(f => f !== data.tag) });
+
+    ack({ error: false, msg: "Tag deleted", payload: null });
+});
