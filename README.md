@@ -23,12 +23,12 @@ NodeCore is a simple and minimalistic Node.js Deployment System that handles the
 
 1. Download project
     ```bash
-    git clone https://github.com/oocastor/NodeCore-Backend
+    git clone https://github.com/oocastor/NodeCore
     ```
 
 2. Change Directory
     ```bash
-    cd NodeCore-Backend
+    cd NodeCore
     ```
 
 3. Install Project
