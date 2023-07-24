@@ -19,6 +19,7 @@ if (cluster.isPrimary) {
     await import("./listener/redirect.listener.js");
     await import("./listener/instance.listener.js");
     await import("./listener/utils.listener.js");
+    await import("./listener/database.listener.js");
 
     await import("./utils/acme.js");
 

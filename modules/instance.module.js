@@ -154,12 +154,14 @@ async function runInstanceAction(data) {
                 acc[key] = value;
                 return acc;
             }, {});
-
             //set port if instance is accessable
             if (instance.network.isAccessable) {
                 env["PORT"] = instance.network.redirect.port;
             }
-
+            console.log({
+                cwd: `${path}/${instance._id}/`, script: instance.script, name: instance._id, env,
+                output: `${path}/${instance._id}/${instance._id}.log`, error: `${path}/${instance._id}/${instance._id}.log`
+            })
             let creation = await createProcess({
                 cwd: `${path}/${instance._id}/`, script: instance.script, name: instance._id, env,
                 output: `${path}/${instance._id}/${instance._id}.log`, error: `${path}/${instance._id}/${instance._id}.log`
