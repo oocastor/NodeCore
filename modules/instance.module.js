@@ -5,7 +5,7 @@ import { cloneRepo, pullRepo } from "../utils/git.js";
 import { runCmd } from '../utils/cmd.js';
 
 import { wait } from "../helper/wait.helper.js";
-import { getPackageJSON } from '../helper/instance.helper.js';
+import { getPackageJSON, checkAndInstallModules } from '../helper/instance.helper.js';
 import { isEqual, deepCopy } from '../helper/object.helper.js';
 
 import { restartProcess, createProcess, stopProcess, deleteProcess } from '../utils/pm2.js';
@@ -36,11 +36,11 @@ async function createInstance(data, id) {
             //interrupt creation process
             return;
         }
-
+        await checkAndInstallModules(data)
+        
         data.script = data.script || packageJSON.payload.main;
         data.version = packageJSON.payload.version;
         data.pm2CreationDone = false;
-
 
         //insert new entity
         global.ENTITIES.insertOne({ type: "instance", ...data });

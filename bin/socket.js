@@ -12,7 +12,6 @@ const io = new Server(https, {
 });
 
 io.on("connect", (socket) => {
-    console.log(socket.id);
 
     socket.on("auth:pw", async (data, ack) => {
         let {user,pw} = data;
