@@ -13,25 +13,25 @@ function getPackageJSON(instance) {
 const checkAndInstallModules = (instance) => {
     let path = global.CONFIG.findOne({ entity: "path" }).value+"/"+instance._id;
     return new Promise((resolve, reject) => {
-        console.log(`${path}/node_modules`)
       if (!fs.existsSync(`${path}/node_modules`)) {
-        const install = spawn('npm', ['install'], { cwd: path, stdio: 'inherit' });
+        const install = spawn('npm', ['install'], { cwd: path, stdio: 'ignore' });
   
         install.on('close', (code) => {
           if (code !== 0) {
             resolve({error: true, msg: `npm install failed with code ${code}`, payload: null})
           } else {
-            console.log('npm install erfolgreich durchgeführt');
+            global.log.success('npm install done');
             resolve({error: false, msg: `npm install done`, payload: null})
           }
         });
   
         install.on('error', (err) => {
-          console.error('Failed to start npm install', err);
+          global.log.error('Failed to start npm install', err);
+          global.log2File.error('Failed to start npm install', err);
           resolve({error: true, msg: err, payload: null})
         });
       } else {
-        console.log('node_modules bereits vorhanden')
+        global.log.info('node_modules already installed')
         resolve({error: false, msg: `node_modules bereits vorhanden`, payload: null})
       }
     });

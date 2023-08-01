@@ -21,7 +21,7 @@ async function getUserRepos() {
         });
         return repos;
     } catch (err) {
-        // console.error(err);
+        // global.log.error(err);
         return [];
     }
 }

@@ -5,7 +5,7 @@ async function syncPM2Data() {
     let path = global.CONFIG.findOne({ entity: "path" }).value;
     let list = await listProcesses();
     if (list.error) {
-        console.error(list);
+        global.log.error(list);
         return;
     }
 

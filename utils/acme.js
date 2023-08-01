@@ -4,7 +4,7 @@ import { existsSync } from "fs";
 import { wait } from "../helper/wait.helper.js";
 
 async function challengeCreateFn(authz, challenge, keyAuthorization) {
-    // console.log(challenge, keyAuthorization)
+    // global.log.debug(challenge, keyAuthorization)
     try {
         if (challenge.type === 'http-01') {
             global.sendToWorkers("updateACME", {
@@ -13,15 +13,15 @@ async function challengeCreateFn(authz, challenge, keyAuthorization) {
                     keyAuthorization
                 }
             });
-            console.log(challenge.token, keyAuthorization);
+            global.log.info(challenge.token, keyAuthorization);
         }
     } catch (err) {
-        console.log(err);
+        global.log.error(err);
     }
 }
 
 async function challengeRemoveFn(authz, challenge, keyAuthorization) {
-    // console.log(challenge, keyAuthorization)
+    // global.log.debug(challenge, keyAuthorization)
     try {
         if (challenge.type === 'http-01') {
             global.sendToWorkers("updateACME", {
@@ -31,7 +31,7 @@ async function challengeRemoveFn(authz, challenge, keyAuthorization) {
             });
         }
     } catch (err) {
-        console.log(err);
+        global.log.error(err);
     }
 }
 
@@ -110,6 +110,7 @@ async function addOrUpdateDomain(_subdomain, _domain) {
 }
 
 async function updateDomainCerts(force = false) {
+    global.logInteractive.await('update domain certificates')
     return new Promise(async (res, rej) => {
         try {
             let proxyConfig = global.CONFIG.findOne({ entity: "proxy" })?.value;
@@ -124,14 +125,14 @@ async function updateDomainCerts(force = false) {
                 let filePath = `${process.cwd()}/certs/${_domain}.json`;
 
                 if (!existsSync(filePath)) {
-                    console.log(`skipped ${_domain}, no cert file found`)
+                    global.logInteractive.await(`update domain certificates - skipped ${_domain}, no cert file found`)
                     continue;
                 }
 
                 let certFile = fs.readJSONSync(filePath);
 
                 if (((new Date().getTime() - certFile.timestap) / (24 * 60 * 60 * 1000)) < 30 && !force) {
-                    console.log(`skipped ${_domain}, cert not older then 30 days`)
+                    global.logInteractive.await(`update domain certificates - skipped ${_domain}, cert not older then 30 days`)
                     continue;
                 }
 
@@ -159,9 +160,11 @@ async function updateDomainCerts(force = false) {
                 //wait 5 seconds
                 wait(5000);
             }
-
+            global.logInteractive.success(`update domain certificates`)
+                   
             res({ error: false, msg: "Certifcates successfully updated", payload: null });
         } catch (err) {
+            global.logInteractive.error(`update domain certificates error ${err}`)
             rej({ error: true, msg: "Something went wrong while updating the ssl certs", payload: err })
         }
     });

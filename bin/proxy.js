@@ -49,7 +49,7 @@ app.get("/.well-known/acme-challenge/:id", (req, res) => {
 });
 
 const http_listener = _http.listen(80, () => {
-    console.log(`http redirect/acme challenge running on port ${http_listener.address().port}`)
+    global.log.success(`http redirect/acme challenge running on port ${http_listener.address().port}`)
 });
 
 // ** HTTPS */
@@ -61,7 +61,7 @@ ensureDirSync(path);
 createHttpsServer();
 
 fs.watch(path, () => {
-    console.log("CHANGED");
+    global.log.debug("CHANGED");
     //give him some time
     setTimeout(() => {
         createHttpsServer();
@@ -85,7 +85,12 @@ function createHttpsServer() {
     _https = https.createServer(certs[0].data, (req, res) => {
         let ip = req.socket.remoteAddress;
         let target = getTargetByDomain(req.headers.host);
-        console.log(`worker ${cluster.worker.id} handled a redirect for ${ip} to ${target}`);
+        if(target !== "undefined"){
+            global.log.success(`redirect ${convertIPv6MappedToIPv4(ip)} to ${target} (${req.headers.host})`);
+        }else{
+            global.log.warn(`redirect ${convertIPv6MappedToIPv4(ip)} to ${target} (${req.headers.host})`);
+        }
+        
         proxy.web(req, res, { target });
     });
 
@@ -94,7 +99,8 @@ function createHttpsServer() {
     });
 
     proxy.on("error", function (err, req, res) {
-        console.error(err);
+        global.log.error(err);
+        global.log2File.error(err)
         res.statusCode = 500;
         res.end();
         return;
@@ -108,7 +114,7 @@ function createHttpsServer() {
     });
 
     const https_listener = _https.listen(443, () => {
-        console.log(`https proxy running on port ${https_listener.address().port}`)
+        global.log.success(`https proxy running on port ${https_listener.address().port}`)
     });
 }
 
@@ -116,12 +122,12 @@ function updateHttpsServer() {
     if (_https == null) return;
 
     let certs = getAllCertsInDir();
-    console.log("UPDATE!")
+    global.log.debug("UPDATE!")
 
     certs.forEach(o => {
         o.altNames.forEach(alt => {
             _https.addContext(alt, o.data);
-            console.log(`worker ${cluster.worker.id} SSL Context updated ${alt} ${o.data.key.split(0, 20)}`);
+            global.log.success(`worker ${cluster.worker.id} SSL Context updated ${alt} ${o.data.key.split(0, 20)}`);
         });
     });
 }
@@ -150,3 +156,18 @@ function getTargetByDomain(host) {
 
     return `http://localhost:${port}`
 }
+
+function convertIPv6MappedToIPv4(ipv6Mapped) {
+    // Die IPv6-Mapped-IPv4-Adresse beginnt mit '::ffff:'.
+    const prefix = '::ffff:';
+    
+    // Prüfen, ob die gegebene Adresse mit '::ffff:' beginnt.
+    if (ipv6Mapped.startsWith(prefix)) {
+      // Die IPv4-Adresse ist der Teil der Adresse nach dem Prefix '::ffff:'.
+      const ipv4Address = ipv6Mapped.substr(prefix.length);
+      return ipv4Address;
+    } else {
+      // Falls die Adresse nicht mit '::ffff:' beginnt, ist es bereits eine normale IPv4-Adresse.
+      return ipv6Mapped;
+    }
+  }

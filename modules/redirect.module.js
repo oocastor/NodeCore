@@ -8,7 +8,7 @@ function createRedirect(data, id) {
         //create ssl cert
         addOrUpdateDomain(data.network.sub, data.network.domain).catch(err => {
             global.IO.to(id).emit("msg:get", err);
-            console.error(err);
+            global.log.error(err);
         });
 
         res({ error: false, msg: "Redirect created", payload: null });
@@ -33,7 +33,7 @@ function updateRedirect(data, id) {
         if (data.network.sub !== old.network.sub || data.network.domain !== old.network.domain) {
             addOrUpdateDomain(data.network.sub, data.network.domain).catch(err => {
                 global.IO.to(id).emit("msg:get", err);
-                console.error(err);
+                global.log.error(err);
             });
         }
 

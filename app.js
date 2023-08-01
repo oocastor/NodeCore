@@ -1,10 +1,11 @@
 import cluster from "cluster";
 import { cpus } from "os";
 import dotenv from "dotenv";
+import {logMain, log2File} from "./modules/logger.module.js"
+
 dotenv.config();
 
 const cores = cpus().length;
-
 if (cluster.isPrimary) {
     //** MASTER */
 
@@ -14,7 +15,6 @@ if (cluster.isPrimary) {
     await import("./bin/socket.js");
 
     await import("./helper/pm2.helper.js");
-
     await import("./listener/sysInfo.listener.js");
     await import("./listener/redirect.listener.js");
     await import("./listener/instance.listener.js");
@@ -47,9 +47,9 @@ if (cluster.isPrimary) {
     }
 
     cluster.on('exit', (worker, code, signal) => {
-        console.log(`worker ${worker.process.pid} died`);
+        global.log.info(`worker ${worker.process.pid} died`);
         if (restartWorkers) {
-            console.log('start new worker...');
+            global.log.info('start new worker...');
             cluster.fork();
         }
     });
