@@ -9,44 +9,20 @@ const options = {
     secrets: [],
     stream: process.stdout,
     types: {
-        coffee1: {
-            badge: '❤️ ❤️ ❤️',
-            color: 'black',
-            label: 'Support us',
-            logLevel: 'info'
-        },
-        coffee2: {
-            badge: '❤️ ❤️ ❤️',
-            color: 'red',
-            label: 'Support us',
-            logLevel: 'info'
-        },
-        coffee3: {
-            badge: '❤️ ❤️ ❤️',
-            color: 'yellow',
-            label: 'Support us',
-            logLevel: 'info'
-        },
         bug: {
-            badge: '🪳',
+            badge: '🐛',
             color: 'red',
             label: 'Bug',
             logLevel: 'info'
         },
-        findme: {
-            badge: '👻',
-            color: 'black',
-            label: 'Here I am',
-            logLevel: 'info'
-        },
-        welcome1: {
-            badge: '❤️ ❤️ ❤️',
+        nodecore: {
+            badge: '',
             color: 'magenta',
             label: 'NodeCore',
             logLevel: 'info'
         },
-        welcome2: {
-            badge: '❤️ ❤️ ❤️',
+        blank: {
+            badge: '',
             color: 'magenta',
             label: '',
             logLevel: 'info'
@@ -60,26 +36,7 @@ const optionsInteractive = {
     logLevel: 'info',
     secrets: [],
     stream: process.stdout,
-    types: {
-        coffee1: {
-            badge: '🪲',
-            color: 'black',
-            label: 'Support us',
-            logLevel: 'info'
-        },
-        coffee2: {
-            badge: '❤️ ❤️ ❤️',
-            color: 'red',
-            label: 'Support us',
-            logLevel: 'info'
-        },
-        coffee3: {
-            badge: '❤️ ❤️ ❤️',
-            color: 'yellow',
-            label: 'Support us',
-            logLevel: 'info'
-        },
-    }
+    types: {}
 };
 const optionsLog2File = {
     disabled: false,
@@ -98,14 +55,16 @@ logMain.config({
     underlineLabel: false,
     displayLabel: true,
     displayBadge: true,
-    displayTimestamp: true
+    displayTimestamp: true,
+    displayFilename: true
 })
 logInteractive.config({
     displayScope: false,
     underlineLabel: false,
     displayLabel: true,
     displayBadge: true,
-    displayTimestamp: true
+    displayTimestamp: true,
+    displayFilename: true
 })
 log2File.config({
     displayScope: true,

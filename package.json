@@ -1,6 +1,6 @@
 {
-  "name": "node-up-backend",
-  "version": "1.0.0",
+  "name": "nodecore-backend",
+  "version": "0.1.2",
   "description": "",
   "main": "app.js",
   "scripts": {

@@ -1,7 +1,7 @@
 import cluster from "cluster";
 import { cpus } from "os";
 import dotenv from "dotenv";
-import {logMain, log2File} from "./modules/logger.module.js"
+import "./utils/logger.js";
 
 dotenv.config();
 

@@ -1,9 +1,8 @@
-import {createSuperuser, deleteSuperuser, installMysql, uninstallMysql, syncMysqlData} from "../helper/mysql.helper.js"
+import {createSuperuser, deleteSuperuser, installMysql, uninstallMysql, syncMysqlData} from "../modules/mysql.module.js"
 
 global.SE.on("databases:get:mysqlData", async (ack) => {
-    await syncMysqlData()
-    let mysqlData = global.DATABASE.findOne({ type: "mysql" });
-    ack({ error: false, msg: "MySQL Data", payload: mysqlData });
+    let data = await syncMysqlData();
+    ack({ error: false, msg: "MySQL Data", payload: data });
 });
 global.SE.on("databases:install:mysql", async (ack) => {
     await installMysql()
