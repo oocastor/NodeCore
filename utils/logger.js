@@ -27,7 +27,7 @@ const options = {
             label: '',
             logLevel: 'info'
         }
-        
+
     }
 };
 const optionsInteractive = {
@@ -43,7 +43,27 @@ const optionsLog2File = {
     interactive: false,
     logLevel: 'info',
     secrets: [],
-    stream: logStream
+    stream: logStream,
+    types: {
+        error: {
+            badge: '',
+            color: 'black',
+            label: 'Error',
+            logLevel: 'info'
+        },
+        bug: {
+            badge: '',
+            color: 'black',
+            label: 'Bug',
+            logLevel: 'info'
+        },
+        info: {
+            badge: '',
+            color: 'black',
+            label: 'Info',
+            logLevel: 'info'
+        },
+    }
 };
 
 export const logMain = new signale.Signale(options);
@@ -70,7 +90,10 @@ log2File.config({
     displayScope: true,
     underlineLabel: false,
     displayLabel: false,
-    displayBadge: false
+    displayBadge: false,
+    // displayTimestamp: true,
+    // displayFilename: true,
+    // displayDate: true
 })
 
 
@@ -85,3 +108,17 @@ global.logInteractive = logInteractive
 // loggerMain.complete('complete')
 // loggerMain.success('success')
 // loggerMain.coffee('Buy us a Coffee')
+
+function removeSpecialChars(inputStream) {
+    const escapePattern = /\x1b\[[0-9;]*m/g;
+
+    inputStream.on('data', chunk => {
+        const cleanedChunk = chunk.toString().replace(escapePattern, '');
+        outputStream.write(cleanedChunk);
+    });
+
+    inputStream.on('end', () => {
+        outputStream.end();
+        console.log('Removal of escape sequences completed.');
+    });
+}
