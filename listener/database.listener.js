@@ -13,5 +13,5 @@ global.SE.on("databases:mysql:createSuperUser", async (data, ack) => {
     createSuperuser(data.username, data.password, data.host).then(res => ack(res)).catch(err => ack(err));
 });
 global.SE.on("databases:mysql:deleteSuperUser", async (data, ack) => {
-    deleteSuperuser(data.username).then(res => ack(res)).catch(err => ack(err));
+    deleteSuperuser(data.username, data.host).then(res => ack(res)).catch(err => ack(err));
 });

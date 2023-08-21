@@ -169,7 +169,7 @@ const createSuperuser = (user, password, host) => {
 	});
 };
 
-const deleteSuperuser = (user, password, host) => {
+const deleteSuperuser = (user, host) => {
 	return new Promise((resolve, reject) => {
 		global.logInteractive.await('Deleting MySQL superuser');
 
