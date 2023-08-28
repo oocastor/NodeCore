@@ -62,7 +62,7 @@ function installMysql() {
 		global.logInteractive.await('MySQL installation started');
 
 		//update repositories and install mysql
-		const installProcess = spawn('sudo apt update && sudo apt-get -y install mysql-server', { shell: true });
+		const installProcess = spawn('apt update && apt-get -y install mysql-server', { shell: true });
 
 		const error = (err) => {
 			global.logInteractive.error(`MySQL installation errored`);
@@ -97,7 +97,7 @@ const uninstallMysql = () => {
 	return new Promise((resolve, reject) => {
 		global.logInteractive.await('Uninstalling MySQL');
 
-		const uninstallProcess = spawn('sudo', ['apt-get', '-y', 'purge', 'mysql-server', 'mysql-client', 'mysql-common', 'mysql-server-core-*', 'mysql-client-core-*']);
+		const uninstallProcess = spawn('apt-get -y purge mysql-server mysql-client mysql-common mysql-server-core-* mysql-client-core-*', { shell: true });
 
 		const error = (err) => {
 			global.logInteractive.error(`Error while uninstalling MySQL`);
@@ -133,13 +133,7 @@ const createSuperuser = (user, password, host) => {
 	return new Promise((resolve, reject) => {
 		global.logInteractive.await('Creating MySQL superuser');
 
-		const createUserProcess = spawn('sudo', [
-			'mysql',
-			'-u',
-			'root',
-			'-e',
-			`CREATE USER '${user}'@'${host}' IDENTIFIED BY '${password}'; GRANT ALL PRIVILEGES ON *.* TO '${user}'@'${host}' WITH GRANT OPTION; FLUSH PRIVILEGES;`
-		]);
+		const createUserProcess = spawn(`mysql -u root -e "CREATE USER '${user}'@'${host}' IDENTIFIED BY '${password}'; GRANT ALL PRIVILEGES ON *.* TO '${user}'@'${host}' WITH GRANT OPTION; FLUSH PRIVILEGES;"`, { shell: true });
 
 		const error = (err) => {
 			global.logInteractive.error(`Error while creating MySQL superuser`);
@@ -173,13 +167,7 @@ const deleteSuperuser = (user, host) => {
 	return new Promise((resolve, reject) => {
 		global.logInteractive.await('Deleting MySQL superuser');
 
-		const deleteUserProcess = spawn('sudo', [
-			'mysql',
-			'-u',
-			'root',
-			'-e',
-			`DROP USER '${user}'@'${host}'; FLUSH PRIVILEGES;`
-		]);
+		const deleteUserProcess = spawn(`mysql -u root -e "DROP USER '${user}'@'${host}'; FLUSH PRIVILEGES;"`, { shell: true });
 
 		const error = (err) => {
 			global.logInteractive.error(`Error while deleting MySQL superuser`);
