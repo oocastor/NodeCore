@@ -1,7 +1,7 @@
 import {createSuperuser, deleteSuperuser, installMysql, uninstallMysql, syncMysqlData} from "../modules/mysql.module.js"
 
 global.SE.on("databases:get:mysqlData", async (ack) => {
-    syncMysqlData().then(res => ack(res)).catch(err => {/*NO ERRORS*/});
+    syncMysqlData().then(res => ack(res)).catch(err => ack(err));
 });
 global.SE.on("databases:install:mysql", async (ack) => {
     installMysql().then(res => ack(res)).catch(err => ack(err));

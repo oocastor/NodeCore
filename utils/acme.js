@@ -110,7 +110,6 @@ async function addOrUpdateDomain(_subdomain, _domain) {
 }
 
 async function updateDomainCerts(force = false) {
-    global.logInteractive.await('update domain certificates')
     return new Promise(async (res, rej) => {
         try {
             let proxyConfig = global.CONFIG.findOne({ entity: "proxy" })?.value;
@@ -118,6 +117,8 @@ async function updateDomainCerts(force = false) {
             if (!proxyConfig || !proxyConfig.enabled) {
                 return;
             }
+
+            global.logInteractive.await('update domain certificates');
 
             let domains = global.CONFIG.findOne({ entity: "domains" }).value;
 

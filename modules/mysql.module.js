@@ -37,7 +37,7 @@ function syncMysqlData() {
 					host: "localhost"
 				}
 			});
-			reject({ error: true, msg: `SyncMysqlData errored`, payload: err });
+			reject({ error: true, msg: err, payload: global.DATABASE.findOne({ type: "mysql" }) });
 		}
 
 		mysqlProcess.on('error', error);
@@ -62,7 +62,7 @@ function installMysql() {
 		global.logInteractive.await('MySQL installation started');
 
 		//update repositories and install mysql
-		const installProcess = spawn('apt update && apt-get -y install mysql-server', { shell: true });
+		const installProcess = spawn('apt update && apt-get -y install mysql-server; sudo systemctl start mysql; sudo service mysql start', { shell: true });
 
 		const error = (err) => {
 			global.logInteractive.error(`MySQL installation errored`);
@@ -80,10 +80,10 @@ function installMysql() {
 				global.logInteractive.success('MySQL successfully installed');
 				resolve({ error: false, msg: "MySQL installed", payload: null });
 			}).catch(err => {
-				global.logInteractive.bug(`MySQL installation finished but syncMysqlData errored: ${err}`);
-				global.log2File.bug(`MySQL installation finished but syncMysqlData errored: ${err}`);
+				global.logInteractive.bug(`MySQL installation finished but syncMysqlData errored: ${err.msg}`);
+				global.log2File.bug(`MySQL installation finished but syncMysqlData errored: ${err.msg}`);
 				//I assume that the mysql command is not accessible
-				reject({ error: true, msg: "MySQL command not found, seems like something went wrong with the installation", payload: err });
+				reject({ error: true, msg: "MySQL command not found, seems like something went wrong with the installation", payload: err.msg });
 			});
 		});
 
@@ -97,7 +97,7 @@ const uninstallMysql = () => {
 	return new Promise((resolve, reject) => {
 		global.logInteractive.await('Uninstalling MySQL');
 
-		const uninstallProcess = spawn('apt-get -y purge mysql-server mysql-client mysql-common mysql-server-core-* mysql-client-core-*', { shell: true });
+		const uninstallProcess = spawn('apt-get -y purge mysql-server mysql-client mysql-common mysql-server-core-* mysql-client-core-*; rm -rf /etc/mysql; rm -rf /var/lib/mysql', { shell: true });
 
 		const error = (err) => {
 			global.logInteractive.error(`Error while uninstalling MySQL`);
