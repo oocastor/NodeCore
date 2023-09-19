@@ -23,6 +23,8 @@ if (cluster.isPrimary) {
 
     await import("./utils/acme.js");
 
+    await import("./bin/integrity.js");
+
     let restartWorkers = false;
 
     global.spawnWorkers = () => {

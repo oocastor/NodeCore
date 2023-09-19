@@ -73,7 +73,6 @@ async function addOrUpdateDomain(_subdomain, _domain) {
             let instances = global.ENTITIES.findMany({ type: "instance", network: { redirect: { domain: _domain } } }) || [];
             instances = instances.filter(f => f.network.redirect.sub != "@");
             instances = instances.map(m => m.network.redirect.sub);
-
             //get all subdomains from redirects
             let redirects = global.ENTITIES.findMany({ type: "redirect", network: { domain: _domain } }) || [];
             redirects = redirects.filter(f => f.network.sub != "@");
@@ -89,7 +88,6 @@ async function addOrUpdateDomain(_subdomain, _domain) {
                 commonName: _domain,
                 altNames
             });
-
             let cert = await client.auto({
                 csr,
                 email: proxyConfig.maintainerEmail,
@@ -162,7 +160,7 @@ async function updateDomainCerts(force = false) {
                 wait(5000);
             }
             global.logInteractive.success(`update domain certificates`)
-                   
+
             res({ error: false, msg: "Certifcates successfully updated", payload: null });
         } catch (err) {
             global.logInteractive.error(`update domain certificates error ${err}`)

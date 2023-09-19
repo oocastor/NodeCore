@@ -6,7 +6,10 @@ import { ensureDirSync } from "fs-extra";
 import httpProxy from "http-proxy";
 import Borgoose from "borgoose";
 import cluster from "cluster";
+// import tls from 'tls';
 
+// // Liste der verfügbaren SSL/TLS-Versionen anzeigen
+// console.log('Verfügbare SSL/TLS-Versionen:', tls.getCiphers());
 //** HTTP */
 const app = express();
 const _http = http.createServer(app);
@@ -61,7 +64,6 @@ ensureDirSync(path);
 createHttpsServer();
 
 fs.watch(path, () => {
-    global.log.debug("CHANGED");
     //give him some time
     setTimeout(() => {
         createHttpsServer();
@@ -81,7 +83,7 @@ function createHttpsServer() {
 
     if (certs.length == 0 || _https != null) return;
 
-    let proxy = httpProxy.createProxyServer({ xfwd: true, secure: false });
+    let proxy = httpProxy.createProxyServer({ xfwd: true, secure: false, changeOrigin: true });
     _https = https.createServer(certs[0].data, (req, res) => {
         let ip = req.socket.remoteAddress;
         let target = getTargetByDomain(req.headers.host);
@@ -90,16 +92,14 @@ function createHttpsServer() {
         }else{
             global.log.warn(`redirect ${convertIPv6MappedToIPv4(ip)} to ${target} (${req.headers.host})`);
         }
-        
         proxy.web(req, res, { target });
     });
 
     certs.slice(1).forEach(o => {
         o.altNames.forEach(alt => _https.addContext(alt, o.data));
     });
-
     proxy.on("error", function (err, req, res) {
-        global.log.error(err);
+        global.log.error('Proxy', err);
         global.log2File.error(err)
         res.statusCode = 500;
         res.end();
@@ -122,7 +122,6 @@ function updateHttpsServer() {
     if (_https == null) return;
 
     let certs = getAllCertsInDir();
-    global.log.debug("UPDATE!")
 
     certs.forEach(o => {
         o.altNames.forEach(alt => {
