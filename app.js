@@ -31,7 +31,7 @@ if (cluster.isPrimary) {
         restartWorkers = true;
         let workerCount = cores - Object.keys(cluster.workers).length;
         for (let i = 0; i < workerCount; i++) {
-            cluster.fork();
+            cluster.fork({ WORKER_NAME: `Slave${i}` });
         }
     }
 
@@ -65,5 +65,6 @@ if (cluster.isPrimary) {
 
 } else if (cluster.isWorker) {
     //** PROXY WORKER */
+    //global.log = global.log.scope(process.env.WORKER_NAME);
     await import("./bin/proxy.js");
 }

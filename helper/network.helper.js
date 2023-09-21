@@ -1,6 +1,6 @@
 import os from 'os';
 import { resolve4, lookup } from 'node:dns';
-
+import http from "http"
 
 function getServerIP() {
     const networkInterfaces = os.networkInterfaces();
@@ -24,7 +24,7 @@ function checkRootDNS(domain) {
             global.log.error(err);
             return;
         }
-        if(addresses.includes(getServerIP())) return true;
+        if (addresses.includes(getServerIP())) return true;
         global.log.warn(`DNS for @ ${domain} not set. Use ${getServerIP()} instead of ${addresses}`)
         return false;
     });
@@ -33,14 +33,41 @@ function checkRootDNS(domain) {
 function checkDNS(domain) {
     //Check for Subdomains like subdomain.example.com
     lookup(domain, (err, address, family) => {
-        if(address == getServerIP()) return true;
+        if (address == getServerIP()) return true;
         global.log.warn(`DNS for ${domain} not set. Use ${getServerIP()} instead of ${address}`)
         return false
+    });
+}
+
+async function checkWebsiteStatus(link) {
+    //Checks the Website Status
+    return new Promise((resolve, reject) => {
+        const options = {
+            host: link,
+            port: 80,
+            method: 'GET'
+        };
+
+        const req = http.request(options, (res) => {
+            if (res.statusCode === 200) {
+                resolve(true);
+            } else {
+                global.log.warn(`${link} Status: ${res.statusCode}`)
+                resolve(false);
+            }
+        });
+
+        req.on('error', (err) => {
+            global.log.warn(err)
+            resolve(false);
+        });
+        req.end();
     });
 }
 
 export {
     getServerIP,
     checkRootDNS,
-    checkDNS
+    checkDNS,
+    checkWebsiteStatus
 }
