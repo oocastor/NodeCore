@@ -98,7 +98,7 @@ async function checkRedirects() {
     redirects.forEach(async element => {
         
         // *** CHECK DATABASE DATA INTEGRITY ***
-        let possibleAttr = ['type', 'name', 'network', 'status']
+        let possibleAttr = ['type', 'name', 'network', 'status', '_id']
         let possibleNetworkAttr = ['sub', 'domain', 'port']
         Object.keys(element).forEach(attr => {
             let error = false;
