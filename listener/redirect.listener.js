@@ -19,7 +19,6 @@ global.SE.on("redirect:write", async (data, ack, id) => {
         scopes = [nameIsUnused(name), domainIsUnused(network.sub, network.domain)];
     } else if (method == "UPDATE") {
         let old = global.ENTITIES.findOne({ _id });
-        global.log.bug('Bug! Cannot read properties of undefined => reading name (old ist undefined)')
         //name changed, add to scope
         if (old.name != name) scopes.push(nameIsUnused(name))
         //(sub)domain changed, add to scope
