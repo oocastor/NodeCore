@@ -5,7 +5,6 @@ import isJsonValue from 'is-json-value'
 import path from 'path';
 import fs from "fs-extra";
 import {
-    checkRootDNS,
     checkDNS
 } from "../helper/network.helper.js"
 import { addOrUpdateDomain } from "../utils/acme.js"
@@ -25,7 +24,7 @@ await (async () => {
 })()
 
 async function checkMySQL() {
-// *** CHECK MYSQL INTEGRITY ***
+    // *** CHECK MYSQL INTEGRITY ***
 
 }
 
@@ -33,9 +32,9 @@ async function checkInstances() {
     // *** CHECK INSTANCES ***
     let redirects = global.ENTITIES.findMany({ type: "instance" })
     redirects.forEach(async element => {
-        
+
         // *** CHECK DATABASE DATA INTEGRITY ***
-        let possibleAttr = ['type', 'name', 'network', 'status', 'git', 'env', 'cmd', 'script', '_id', 'version', 'pm2CreationDone']
+        let possibleAttr = ['type', 'name', 'network', 'status', 'git', 'env', 'cmd', 'script', '_id', 'version', 'pm2CreationDone', 'pm2']
         let possibleNetworkAttr = ['isAccessable', 'redirect']
         let possibleNetworkRedirectAttr = ['sub', 'domain', 'port']
         let possibleGitAttr = ['name', 'uri', 'lang']
@@ -72,7 +71,7 @@ async function checkInstances() {
                     })
                 }
             } else {
-                global.log.warn('redirect integrity error. try to repair')
+                global.log.warn('redirect integrity error. try to repair', attr)
                 delete element[attr];
                 error = true
             }
@@ -83,10 +82,12 @@ async function checkInstances() {
             }
         });
         // *** CHECK DNS ENTRIES ***
-        if (element.network.redirect.sub == "@") {
-            checkRootDNS(element.network.redirect.domain)
-        } else {
-            checkDNS(`${element.network.redirect.sub}.${element.network.redirect.domain}`)
+        if (element.status == 1) {
+            if (element.network.sub == "@") {
+                await checkDNS(element.network.redirect.domain)
+            } else if (element.network.redirect.sub && element.network.redirect.domain && element.network.redirect.sub !== "" && element.network.redirect.domain !== "") {
+                await checkDNS(`${element.network.redirect.sub}.${element.network.redirect.domain}`)
+            }
         }
         global.log.success('check instance ' + element.name)
     });
@@ -96,7 +97,7 @@ async function checkRedirects() {
     // *** CHECK REDIRECTS ***
     let redirects = global.ENTITIES.findMany({ type: "redirect" })
     redirects.forEach(async element => {
-        
+
         // *** CHECK DATABASE DATA INTEGRITY ***
         let possibleAttr = ['type', 'name', 'network', 'status', '_id']
         let possibleNetworkAttr = ['sub', 'domain', 'port']
@@ -124,12 +125,15 @@ async function checkRedirects() {
             }
         });
         // *** CHECK DNS ENTRIES ***
-        if (element.network.sub == "@") {
-            checkRootDNS(element.network.domain)
-        } else {
-            checkDNS(`${element.network.sub}.${element.network.domain}`)
+        if (element.status == 1) {
+            if (element.network.sub == "@") {
+                await checkDNS(element.network.domain)
+            } else if (element.network.sub && element.network.domain && element.network.sub !== "" && element.network.domain !== "") {
+                await checkDNS(`${element.network.sub}.${element.network.domain}`)
+            }
         }
-        global.log.success('check redirect' + element.name)
+
+        global.log.success('check redirect ' + element.name)
     });
 
 }

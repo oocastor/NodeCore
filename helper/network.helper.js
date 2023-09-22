@@ -17,27 +17,33 @@ function getServerIP() {
     return ipv4Addresses[0]
 }
 
-function checkRootDNS(domain) {
-    //Check for Root Domain (@). Use just the main Domain like example.com
-    resolve4(domain, (err, addresses) => {
-        if (err) {
-            global.log.error(err);
-            return;
-        }
-        if (addresses.includes(getServerIP())) return true;
-        global.log.warn(`DNS for @ ${domain} not set. Use ${getServerIP()} instead of ${addresses}`)
-        return false;
-    });
-}
-
 function checkDNS(domain) {
-    //Check for Subdomains like subdomain.example.com
-    lookup(domain, (err, address, family) => {
-        if (address == getServerIP()) return true;
-        global.log.warn(`DNS for ${domain} not set. Use ${getServerIP()} instead of ${address}`)
-        return false
+    // *** DNS Check ***
+    // *** NOTICE: lookup() is sync but its behavior is async! Keep the Promise to catch that behavior.
+    return new Promise((resolve, reject) => {
+        try {
+            if(!domain || domain == "") {
+                reject('Empty Hostname')
+                return;
+            }
+            lookup(domain, (err, address, family) => {
+                if (err) {
+                  global.log.error(err);
+                  reject(err);
+                  return;
+                }
+                if (address !== getServerIP()) {
+                  global.log.warn(`DNS for ${domain} not set. Use ${getServerIP()} instead of ${address}`);
+                }
+                resolve(address === getServerIP());
+              });
+        } catch (error) {
+            global.log.error(error);
+            reject(error)
+        }
+      
     });
-}
+  }
 
 async function checkWebsiteStatus(link) {
     //Checks the Website Status
@@ -67,7 +73,6 @@ async function checkWebsiteStatus(link) {
 
 export {
     getServerIP,
-    checkRootDNS,
     checkDNS,
     checkWebsiteStatus
 }
