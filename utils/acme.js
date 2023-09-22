@@ -2,7 +2,9 @@ import acme from "acme-client";
 import fs from "fs-extra";
 import { existsSync } from "fs";
 import { wait } from "../helper/wait.helper.js";
-
+import {
+    checkDNS
+} from "../helper/network.helper.js"
 async function challengeCreateFn(authz, challenge, keyAuthorization) {
     // global.log.debug(challenge, keyAuthorization)
     try {
@@ -68,7 +70,7 @@ async function addOrUpdateDomain(_subdomain, _domain) {
                 rej({ error: true, msg: "Cannot create ssl cert - enable proxy first!", payload: null });
                 return;
             }
-
+            global.log.info('Create Redirect')
             //get all subdomains from instances
             let instances = global.ENTITIES.findMany({ type: "instance", network: { redirect: { domain: _domain } } }) || [];
             instances = instances.filter(f => f.network.redirect.sub != "@");
@@ -79,28 +81,40 @@ async function addOrUpdateDomain(_subdomain, _domain) {
             redirects = redirects.map(m => m.network.sub)
 
             let foundedSubdomains = [...instances, ...redirects];
-
             let client = await initClient();
 
             let altNames = [_domain, ...foundedSubdomains.map(m => `${m}.${_domain}`)];
 
-            let [key, csr] = await acme.crypto.createCsr({
-                commonName: _domain,
-                altNames
+            //DNS Check
+            let wrongDNS = [];
+            altNames.forEach(async domain => {
+                if (!(await checkDNS(domain))) {
+                    wrongDNS.push(domain)
+                }
             });
-            let cert = await client.auto({
-                csr,
-                email: proxyConfig.maintainerEmail,
-                termsOfServiceAgreed: true,
-                challengeCreateFn,
-                challengeRemoveFn
-            });
+            if (wrongDNS.length == 0) {
+                let [key, csr] = await acme.crypto.createCsr({
+                    commonName: _domain,
+                    altNames
+                });
+                let cert = await client.auto({
+                    csr,
+                    email: proxyConfig.maintainerEmail,
+                    termsOfServiceAgreed: true,
+                    challengeCreateFn,
+                    challengeRemoveFn
+                });
 
-            let timestap = new Date().getTime();
+                let timestap = new Date().getTime();
 
-            fs.writeJsonSync(`${process.cwd()}/certs/${_domain}.json`, { key: key.toString(), cert: cert.toString(), csr: csr.toString(), altNames, timestap }, (err) => new Error(err));
+                fs.writeJsonSync(`${process.cwd()}/certs/${_domain}.json`, { key: key.toString(), cert: cert.toString(), csr: csr.toString(), altNames, timestap }, (err) => new Error(err));
 
-            res({ error: false, msg: "Certifcate successfully created or updated", payload: null });
+                res({ error: false, msg: "Certifcate successfully created or updated", payload: null });
+            } else {
+                global.log.warn('Cant Create Cert - DNS Missing - '+JSON.stringify(wrongDNS))
+                rej({ error: true, msg: "Can´t create Certifcate. Missing DNS Entry for " + JSON.stringify(wrongDNS), payload: null });
+            }
+
         } catch (err) {
             rej({ error: true, msg: "Something went wrong while creating the ssl certs", payload: err });
         }
