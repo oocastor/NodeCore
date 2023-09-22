@@ -126,7 +126,7 @@ function updateHttpsServer() {
     certs.forEach(o => {
         o.altNames.forEach(alt => {
             _https.addContext(alt, o.data);
-            global.log.success(`worker ${cluster.worker.id} SSL Context updated ${alt} ${o.data.key.split(0, 20)}`);
+            global.log.success(`worker ${cluster.worker.id} SSL cert updated`);
         });
     });
 }
