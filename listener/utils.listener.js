@@ -89,7 +89,7 @@ global.SE.on("proxy:set", async (data, ack) => {
 
 global.SE.on("proxy:updateCerts", async (data, ack, id) => {
     updateDomainCerts(data.force).catch((err) => {
-        global.IO.to(id).emit("msg:get", err);
+        global.emitToAllServers(id, "msg:get", err)
         global.log2File.error(err)
         global.log.error(err);
     });

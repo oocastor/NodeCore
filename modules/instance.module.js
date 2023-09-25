@@ -58,7 +58,7 @@ async function createInstance(data, id) {
                 if (errs.length) {
                     let msgs = errs.map(m => m.msg);
                     errs[0].msg = msgs;
-                    global.IO.to(id).emit("msg:get", errs[0]);
+                    global.emitToAllServers(id, "msg:get", errs[0])
                 }
             });
 
@@ -67,7 +67,7 @@ async function createInstance(data, id) {
         //create ssl certificates
         if (data.network.isAccessable) {
             addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain).catch(err => {
-                global.IO.to(id).emit("msg:get", err);
+                global.emitToAllServers(id, "msg:get", err)
                 global.log.error(err);
                 global.log2File.error(err)
             });
@@ -93,7 +93,7 @@ function updateInstance(data, id) {
         //create ssl cert on network config change
         if (data.network.isAccessable && data.network.redirect.sub !== old.network.redirect.sub || data.network.redirect.domain !== old.network.redirect.domain) {
             addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain).catch(err => {
-                global.IO.to(id).emit("msg:get", err);
+                global.emitToAllServers(id, "msg:get", err)
                 global.log.error(err);
             });
         }
@@ -111,7 +111,7 @@ function updateInstance(data, id) {
                     if (errs.length) {
                         let msgs = errs.map(m => m.msg);
                         errs[0].msg = msgs;
-                        global.IO.to(id).emit("msg:get", errs[0]);
+                        global.emitToAllServers(id, "msg:get", errs[0])
                     }
                 });
         }
@@ -123,7 +123,7 @@ function updateInstance(data, id) {
             || data.network.redirect.port !== old.network.redirect.port) {
             runInstanceAction({ _id: data._id, status: 1 }).then(() => {
             }).catch((err) => {
-                global.IO.to(id).emit("msg:get", err);
+                global.emitToAllServers(id, "msg:get", err)
             });
         }
 

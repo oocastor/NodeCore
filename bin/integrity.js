@@ -18,6 +18,8 @@ await (async () => {
     await checkRedirects();
     // *** CHECK INSTANCES ***
     await checkInstances()
+    // *** CHECK TRACKING ***
+    await checkTracking()
     // *** CHECK MYSQL ***
     await checkMySQL()
 
@@ -26,6 +28,25 @@ await (async () => {
 async function checkMySQL() {
     // *** CHECK MYSQL INTEGRITY ***
 
+}
+
+async function checkTracking() {
+    // *** CHECK Tracking INTEGRITY ***
+    // *** CLEAN CONFIG ***
+    let config = global.CONFIG.findOne({ "entity": "tracking" }).value;
+    let possibleAttr = ["enabled", "anonymizeIP", "saveDays"]
+    Object.keys(config).forEach(element => {
+        if (!possibleAttr.includes(element)) {
+            delete config[element];
+        }
+    });
+    global.CONFIG.updateOne({ "entity": "tracking" }, config)
+    // *** DELETE OLD TRACKINGS ***
+    let saveForDays = config.saveDays || 7;
+    const currentTime = new Date(); // Aktuelles Datum
+    const threshold = new Date(currentTime - (saveForDays * 24 * 60 * 60 * 1000)); // Zeitgrenze für das Löschen
+    global.log.bug('Löschen muss getestet werden!!')
+    global.TRACKING.deleteMany((o) => o.timestamp < threshold);
 }
 
 async function checkInstances() {
@@ -188,6 +209,8 @@ function checkSetup() {
     if (!global.CONFIG.findOne({ entity: "sysInfoUpdateInterval" })) global.log.info('SysInfo Update Interval not set. Loading initial Config') && global.CONFIG.insertOne({ entity: "sysInfoUpdateInterval", value: 2000 });
     if (!global.CONFIG.findOne({ entity: "proxy" })) global.log.info('Proxy Database empty. Loading initial Config') && global.CONFIG.insertOne({ entity: "proxy", value: { enabled: false, subscriberEmail: "", cluster: false, workers: 1, pid: "" } });
     if (!global.CONFIG.findOne({ entity: "tags" })) global.log.info('Tag Database empty. Loading initial Config') && global.CONFIG.insertOne({ entity: "tags", value: [] });
+    if (!global.CONFIG.findOne({ entity: "tracking" })) global.CONFIG.insertOne({ entity: "tracking", value: { enabled: true, anonymizeIP: true, saveDays: 7 } });
+
     // *** CREATE OR REPAIR LOGIN  ***
     if (global.USERS.findMany().length < 1) global.log.info('No User found. Create initial user') && createNewUser("nodecore", "nodecore")
     // *** CREATE INSTANCE DIR ***

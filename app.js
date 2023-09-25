@@ -20,6 +20,7 @@ if (cluster.isPrimary) {
     await import("./listener/instance.listener.js");
     await import("./listener/utils.listener.js");
     await import("./listener/database.listener.js");
+    await import("./listener/worker.listener.js");
 
     await import("./utils/acme.js");
 
@@ -31,7 +32,7 @@ if (cluster.isPrimary) {
         restartWorkers = true;
         let workerCount = cores - Object.keys(cluster.workers).length;
         for (let i = 0; i < workerCount; i++) {
-            cluster.fork({ WORKER_NAME: `Slave${i}` });
+            cluster.fork({ WORKER_NAME: `Slave${i}`, WORKER_ID: i });
         }
     }
 
@@ -47,6 +48,10 @@ if (cluster.isPrimary) {
             worker.send(JSON.stringify({ event, data }));
         });
     }
+
+    cluster.on('message', (worker, message) => {
+        global.SE.emit('worker:message', message)
+      });
 
     cluster.on('exit', (worker, code, signal) => {
         global.log.info(`worker ${worker.process.pid} died`);

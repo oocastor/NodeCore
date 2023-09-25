@@ -8,7 +8,7 @@ function createRedirect(data, id) {
         global.ENTITIES.insertOne({ type: "redirect", ...data });
         // *** CREATE SSL CERT ***
         addOrUpdateDomain(data.network.sub, data.network.domain).catch(err => {
-            global.IO.to(id).emit("msg:get", err);
+            global.emitToAllServers(id, "msg:get", err)
             global.log.error(err);
         });
 
@@ -33,7 +33,7 @@ function updateRedirect(data, id) {
         // *** CREATE SSL CERT AND RELOAD PROXY ***
         if (data.network.sub !== old.network.sub || data.network.domain !== old.network.domain) {
             addOrUpdateDomain(data.network.sub, data.network.domain).catch(err => {
-                global.IO.to(id).emit("msg:get", err);
+                global.emitToAllServers(id, "msg:get", err)
                 global.log.error(err);
             });
         }

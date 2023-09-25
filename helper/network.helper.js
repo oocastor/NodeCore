@@ -1,6 +1,8 @@
 import os from 'os';
 import { resolve4, lookup } from 'node:dns';
 import http from "http"
+import forge from 'node-forge';
+import fs from 'fs/promises';
 
 function getServerIP() {
     const networkInterfaces = os.networkInterfaces();
@@ -71,8 +73,43 @@ async function checkWebsiteStatus(link) {
     });
 }
 
+async function createLocalCert() {
+    const keys = forge.pki.rsa.generateKeyPair(2048);
+    const cert = forge.pki.createCertificate();
+  
+    cert.publicKey = keys.publicKey;
+    cert.serialNumber = '01';
+    cert.validity.notBefore = new Date();
+    cert.validity.notAfter = new Date();
+    cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 1);
+  
+    const attrs = [
+      { name: 'commonName', value: 'localhost' },
+    ];
+    cert.setSubject(attrs);
+    cert.setIssuer(attrs);
+    cert.setExtensions([
+        {
+          name: 'subjectAltName',
+          altNames: [
+            {
+              type: 7, // IP
+              ip: getServerIP() // Server IP
+            }
+          ]
+        }
+      ]);
+    cert.sign(keys.privateKey);
+  
+    const pemCert = forge.pki.certificateToPem(cert);
+    const pemKeys = forge.pki.privateKeyToPem(keys.privateKey);
+  
+    return { key: pemKeys, cert: pemCert };
+  };
+
 export {
     getServerIP,
     checkDNS,
-    checkWebsiteStatus
+    checkWebsiteStatus,
+    createLocalCert
 }
