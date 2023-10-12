@@ -40,7 +40,7 @@ async function checkTracking() {
             delete config[element];
         }
     });
-    global.CONFIG.updateOne({ "entity": "tracking" }, config)
+    global.CONFIG.updateOne({ "entity": "tracking" }, {value: config})
     // *** DELETE OLD TRACKINGS ***
     let saveForDays = config.saveDays || 7;
     const currentTime = new Date(); // Aktuelles Datum
