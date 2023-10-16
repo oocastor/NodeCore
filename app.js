@@ -21,6 +21,7 @@ if (cluster.isPrimary) {
     await import("./listener/utils.listener.js");
     await import("./listener/database.listener.js");
     await import("./listener/worker.listener.js");
+    await import("./listener/tracking.listener.js");
 
     await import("./utils/acme.js");
 

@@ -4,7 +4,7 @@ function track(ip, target, authorized = true){
     let config = CONFIG.findOne({entity: "tracking"}).value;
     if(config.enabled){
         // *** TRACKING ENABLED ***
-        if(target !== "undefined" && config.anonymizeIp) ip = anonymizeIp(ip);
+        if(target !== "undefined" && config.anonymizeIP) ip = anonymizeIp(ip);
         process.send({
           type: "tracking",
           timestamp: new Date(),

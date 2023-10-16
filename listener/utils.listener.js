@@ -170,18 +170,3 @@ global.SE.on("tags:delete", async (data, ack) => {
 
     ack({ error: false, msg: "Tag deleted", payload: null });
 });
-
-global.SE.on("tracking:get", async (ack) => {
-    let { value } = global.CONFIG.findOne({ entity: "tracking" });
-    ack({ error: false, msg: "Tracking status fetched", payload: value });
-});
-
-global.SE.on("tracking:set", async (data, ack) => {
-    if(!hasAllProperties(data, ["enabled", "anonymiseIP", "saveDays"])) {
-        ack({ error: true, msg: "Cannot change tracking settings", payload: null });
-        return;
-    }
-
-    global.CONFIG.updateOne({ entity: "tracking" }, { value: data });
-    ack({ error: false, msg: "Tracking settings changed", payload: null });
-});
