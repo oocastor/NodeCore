@@ -40,7 +40,7 @@ async function checkTracking() {
             delete config[element];
         }
     });
-    global.CONFIG.updateOne({ "entity": "tracking" }, {value: config})
+    global.CONFIG.updateOne({ "entity": "tracking" }, { value: config })
     // *** DELETE OLD TRACKINGS ***
     let saveForDays = config.saveDays || 7;
     const currentTime = new Date(); // Aktuelles Datum
@@ -114,6 +114,7 @@ async function checkInstances() {
     });
 
 }
+
 async function checkRedirects() {
     // *** CHECK REDIRECTS ***
     let redirects = global.ENTITIES.findMany({ type: "redirect" })
@@ -158,6 +159,7 @@ async function checkRedirects() {
     });
 
 }
+
 async function checkCertificates() {
     // *** CHECK CERT DIR FOR BROKEN CERTS ***
     try {
@@ -200,19 +202,54 @@ async function checkCertificates() {
         console.error('Ein Fehler ist aufgetreten:', err);
     }
 }
+
 function checkSetup() {
     // *** CREATE OR REPAIR VARS ***
-    if (!global.CONFIG.findOne({ entity: "domains" })) global.log.info('Domain Database empty. Loading initial Config') && global.CONFIG.insertOne({ entity: "domains", value: [] })
-    if (!global.CONFIG.findOne({ entity: "github" })) global.log.info('Github Database empty. Loading initial Config') && global.CONFIG.insertOne({ entity: "github", value: { pat: "" } });
-    if (!global.CONFIG.findOne({ entity: "path" })) global.log.info('Path Database empty. Loading initial Config') && global.CONFIG.insertOne({ entity: "path", value: "/home/nodecore-instances" });
-    if (!global.CONFIG.findOne({ entity: "pm2UpdateInterval" })) global.log.info('PM2 Update Interval not set. Loading initial Config') && global.CONFIG.insertOne({ entity: "pm2UpdateInterval", value: 2000 });
-    if (!global.CONFIG.findOne({ entity: "sysInfoUpdateInterval" })) global.log.info('SysInfo Update Interval not set. Loading initial Config') && global.CONFIG.insertOne({ entity: "sysInfoUpdateInterval", value: 2000 });
-    if (!global.CONFIG.findOne({ entity: "proxy" })) global.log.info('Proxy Database empty. Loading initial Config') && global.CONFIG.insertOne({ entity: "proxy", value: { enabled: false, subscriberEmail: "", cluster: false, workers: 1, pid: "" } });
-    if (!global.CONFIG.findOne({ entity: "tags" })) global.log.info('Tag Database empty. Loading initial Config') && global.CONFIG.insertOne({ entity: "tags", value: [] });
-    if (!global.CONFIG.findOne({ entity: "tracking" })) global.CONFIG.insertOne({ entity: "tracking", value: { enabled: true, anonymizeIP: true, saveDays: 7 } });
+    if (!global.CONFIG.findOne({ entity: "domains" })) {
+        global.log.info('Domain Database empty. Loading initial Config');
+        global.CONFIG.insertOne({ entity: "domains", value: [] });
+    }
+
+    if (!global.CONFIG.findOne({ entity: "github" })) {
+        global.log.info('Github Database empty. Loading initial Config');
+        global.CONFIG.insertOne({ entity: "github", value: { pat: "" } });
+    }
+
+    if (!global.CONFIG.findOne({ entity: "path" })) {
+        global.log.info('Path Database empty. Loading initial Config');
+        global.CONFIG.insertOne({ entity: "path", value: "/home/nodecore-instances" });
+    }
+
+    if (!global.CONFIG.findOne({ entity: "pm2UpdateInterval" })) {
+        global.log.info('PM2 Update Interval not set. Loading initial Config');
+        global.CONFIG.insertOne({ entity: "pm2UpdateInterval", value: 2000 });
+    }
+
+    if (!global.CONFIG.findOne({ entity: "sysInfoUpdateInterval" })) {
+        global.log.info('SysInfo Update Interval not set. Loading initial Config');
+        global.CONFIG.insertOne({ entity: "sysInfoUpdateInterval", value: 2000 });
+    }
+
+    if (!global.CONFIG.findOne({ entity: "proxy" })) {
+        global.log.info('Proxy Database empty. Loading initial Config');
+        global.CONFIG.insertOne({ entity: "proxy", value: { enabled: false, subscriberEmail: "", cluster: false, workers: 1, pid: "" } });
+    }
+
+    if (!global.CONFIG.findOne({ entity: "tags" })) {
+        global.log.info('Tag Database empty. Loading initial Config');
+        global.CONFIG.insertOne({ entity: "tags", value: [] });
+    }
+
+    if (!global.CONFIG.findOne({ entity: "tracking" })) {
+        global.CONFIG.insertOne({ entity: "tracking", value: { enabled: true, anonymizeIP: true, saveDays: 7 } });
+    }
+
 
     // *** CREATE OR REPAIR LOGIN  ***
-    if (global.USERS.findMany().length < 1) global.log.info('No User found. Create initial user') && createNewUser("nodecore", "nodecore")
+    if (global.USERS.findMany().length < 1) {
+        global.log.info('No User found. Create initial user');
+        createNewUser("nodecore", "nodecore");
+    }
     // *** CREATE INSTANCE DIR ***
     fs.ensureDirSync("/home/nodecore-instances");
     fs.ensureDirSync("certs");
