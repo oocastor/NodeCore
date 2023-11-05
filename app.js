@@ -14,7 +14,9 @@ if (cluster.isPrimary) {
     await import("./bin/database.js");
     await import("./bin/socket.js");
 
+    await import("./helper/notification.helper.js");
     await import("./helper/pm2.helper.js");
+    
     await import("./listener/sysInfo.listener.js");
     await import("./listener/redirect.listener.js");
     await import("./listener/instance.listener.js");

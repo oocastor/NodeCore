@@ -170,3 +170,7 @@ global.SE.on("tags:delete", async (data, ack) => {
 
     ack({ error: false, msg: "Tag deleted", payload: null });
 });
+
+global.SE.on("notifications:get", async (ack) => {
+    ack({ error: false, msg: "Fetched notifications", payload: global.stickyNotification.queue });
+});
