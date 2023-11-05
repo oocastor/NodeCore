@@ -45,7 +45,7 @@ async function checkTracking() {
     let saveForDays = config.saveDays || 7;
     const currentTime = new Date(); // Aktuelles Datum
     const threshold = new Date(currentTime - (saveForDays * 24 * 60 * 60 * 1000)); // Zeitgrenze für das Löschen
-    global.log.bug('Löschen muss getestet werden!!')
+    global.log.review('Löschen muss getestet werden!!')
     global.TRACKING.deleteMany((o) => o.timestamp < threshold);
 }
 

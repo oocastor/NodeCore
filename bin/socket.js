@@ -56,6 +56,7 @@ const ioHttp = setupSocket(http);
 const ioHttps = setupSocket(https);
 
 function emitToAllServers(id, event, message) {
+    if(!id || !event) return;
     ioHttp.to(id).emit(event, message);
     ioHttps.to(id).emit(event, message);
 }

@@ -9,6 +9,12 @@ const options = {
     secrets: [],
     stream: process.stdout,
     types: {
+        review: {
+            badge: '🚩',
+            color: 'yellow',
+            label: 'Review',
+            logLevel: 'info'
+        },
         bug: {
             badge: '🐛',
             color: 'red',
