@@ -70,7 +70,8 @@ async function addOrUpdateDomain(_subdomain, _domain) {
                 rej({ error: true, msg: "Cannot create ssl cert - enable proxy first!", payload: null });
                 return;
             }
-            global.log.info('Create Redirect')
+            global.log.info('Create Redirect');
+            let notificationId = global.stickyNotification.add(`Create Redirect for "${_subdomain}.${_domain}"`, 'This process can take a while, please be patient');
             //get all subdomains from instances
             let instances = global.ENTITIES.findMany({ type: "instance", network: { redirect: { domain: _domain } } }) || [];
             instances = instances.filter(f => f.network.redirect.sub != "@");
@@ -109,10 +110,12 @@ async function addOrUpdateDomain(_subdomain, _domain) {
 
                 fs.writeJsonSync(`${process.cwd()}/certs/${_domain}.json`, { key: key.toString(), cert: cert.toString(), csr: csr.toString(), altNames, timestap }, (err) => new Error(err));
 
+                global.stickyNotification.remove(notificationId);
                 res({ error: false, msg: "Certifcate successfully created or updated", payload: null });
             } else {
-                global.log.warn('Cant Create Cert - DNS Missing - '+JSON.stringify(wrongDNS))
-                rej({ error: true, msg: "Can´t create Certifcate. Missing DNS Entry for " + JSON.stringify(wrongDNS), payload: null });
+                global.log.warn('Cant Create Cert - DNS Missing - '+JSON.stringify(wrongDNS));
+                global.stickyNotification.remove(notificationId);
+                rej({ error: true, msg: "Can`t create Certifcate. Missing DNS Entry for " + JSON.stringify(wrongDNS), payload: null });
             }
 
         } catch (err) {
