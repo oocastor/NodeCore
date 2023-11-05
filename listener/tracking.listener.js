@@ -39,7 +39,7 @@ global.SE.on("tracking:data:last7days", (ack) => {
     let groupedTrackingData = [];
 
     totalTrackingData.forEach((trackingData, index) => {
-        if(!groupedTrackingData.find(f => f.target === trackingData.target) && trackingData.authorized) {
+        if (!groupedTrackingData.find(f => f.target === trackingData.target) && trackingData.authorized) {
             groupedTrackingData.push({
                 target: trackingData.target,
                 connectionsPerDay: totalTrackingData.filter(f => f.target === trackingData.target).reduce((acc, curr) => {
@@ -49,7 +49,7 @@ global.SE.on("tracking:data:last7days", (ack) => {
                         month: "2-digit",
                         day: "2-digit"
                     });
-                    if(!acc.find(f => f.date === dateStr)) {
+                    if (!acc.find(f => f.date === dateStr)) {
                         acc.push({
                             date: dateStr,
                             count: 1
@@ -65,4 +65,33 @@ global.SE.on("tracking:data:last7days", (ack) => {
     });
 
     ack({ error: false, msg: "Fetched tracking data", payload: groupedTrackingData });
+});
+
+global.SE.on("tracking:data:byUrl", (data, ack) => {
+    if (!hasAllProperties(data, ["url"])) {
+        ack({ error: true, msg: "No url parameter provided.", payload: null });
+        return;
+    }
+
+    let { url } = data;
+
+    let totalTrackingData = global.TRACKING.findMany();
+
+    let localDateString = (string) => new Date(string).toLocaleDateString("DE-de", { year: "numeric", month: "2-digit", day: "2-digit" });
+
+    //get all requests per day
+    let requestsPerDay = totalTrackingData.filter(f => url.find(u => u == f.target) && f.authorized && localDateString(f.timestamp) == localDateString(new Date()));
+
+    //get all unique requests per day
+    let uniqueRequestsPerDay = requestsPerDay.reduce((acc, curr) => {
+        if (!acc.find(f => f.ip === curr.ip)) {
+            acc.push(curr);
+        }
+        return acc;
+    }, []);
+
+    //get all request per week
+    let requestsPerWeek = totalTrackingData.filter(f => url.find(u => u == f.target) && f.authorized && new Date(f.timestamp) >= new Date(new Date().setDate(new Date().getDate() - 7)));
+
+    ack({ error: false, msg: "Fetched tracking data", payload: { requestsPerDay: requestsPerDay.length, uniqueRequestsPerDay: uniqueRequestsPerDay.length, requestsPerWeek: requestsPerWeek.length } });
 });
