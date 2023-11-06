@@ -1,4 +1,5 @@
 import { hasAllProperties } from "../helper/object.helper.js";
+import { checkIfDomainIsUsed } from "../modules/tracking.module.js";
 
 global.SE.on("tracking:get", async (ack) => {
     let { value } = global.CONFIG.findOne({ entity: "tracking" });
@@ -39,7 +40,7 @@ global.SE.on("tracking:data:last7days", (ack) => {
     let groupedTrackingData = [];
 
     totalTrackingData.forEach((trackingData, index) => {
-        if (!groupedTrackingData.find(f => f.target === trackingData.target) && trackingData.authorized) {
+        if (!groupedTrackingData.find(f => f.target === trackingData.target) && trackingData.authorized && checkIfDomainIsUsed(trackingData.target)) {
             groupedTrackingData.push({
                 target: trackingData.target,
                 connectionsPerDay: totalTrackingData.filter(f => f.target === trackingData.target).reduce((acc, curr) => {

@@ -6,7 +6,7 @@ import { ensureDirSync } from "fs-extra";
 import httpProxy from "http-proxy";
 import Borgoose from "borgoose";
 import cluster from "cluster";
-import tracker from "../modules/tracking.module.js"
+import { track } from "../modules/tracking.module.js"
 //** HTTP */
 const app = express();
 const _http = http.createServer(app);
@@ -86,11 +86,11 @@ function createHttpsServer() {
         let target = getTargetByDomain(req.headers.host);
         if (target !== "undefined") {
             global.log.success(`redirect ${convertIPv6MappedToIPv4(ip)} to ${target} (${req.headers.host})`);
-            tracker.track(convertIPv6MappedToIPv4(ip), req.headers.host)
+            track(convertIPv6MappedToIPv4(ip), req.headers.host)
             proxy.web(req, res, { target });
         } else {
             global.log.warn(`blocked redirect ${convertIPv6MappedToIPv4(ip)} to ${target} (${req.headers.host})`);
-            tracker.track(convertIPv6MappedToIPv4(ip), req.headers.host, false)
+            track(convertIPv6MappedToIPv4(ip), req.headers.host, false)
             //IPs tracken?
             res.statusCode = 404;
         }
