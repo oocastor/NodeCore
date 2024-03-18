@@ -38,7 +38,7 @@ NodeCore is a simple and minimalistic Node.js Deployment System that handles the
 
 4. Start ``NodeCore`` with pm2
     ```bash
-    pm2 start app.js && pm2 save
+    pm2 start app.js -- --color && pm2 save
     ```
 
 ## First Steps
@@ -54,3 +54,4 @@ NodeCore is a simple and minimalistic Node.js Deployment System that handles the
     - Add a GitHub PAT.
     - Add a domain that points to the server.
     - Enable the proxy and set your email.
+    - Activate a redirect from your domain to port 1001 (use @ as subdomain)

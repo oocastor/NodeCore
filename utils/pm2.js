@@ -6,7 +6,7 @@ function listProcesses() {
         pm2.connect((err) => {
             if (err) {
                 res({ error: true, msg: "Cannot connect to pm2", payload: null });
-                console.error(err);
+                global.log.error(err);
                 pm2.disconnect();
                 return;
             }
@@ -14,7 +14,7 @@ function listProcesses() {
                 pm2.disconnect();
                 if (err) {
                     res({ error: true, msg: "Cannot get instances list from pm2", payload: null });
-                    console.error(err);
+                    global.log.error(err);
                     return;
                 }
                 res({ error: false, msg: "Instances list fetched from pm2", payload: list });
@@ -28,7 +28,7 @@ function createProcess(data) {
         pm2.connect((err) => {
             if (err) {
                 res({ error: true, msg: "Cannot connect to pm2", payload: null });
-                console.error(err);
+                global.log.error(err);
                 pm2.disconnect();
                 return;
             }
@@ -36,7 +36,7 @@ function createProcess(data) {
                 pm2.disconnect();
                 if (err) {
                     res({ error: true, msg: "Cannot start node instance with pm2", payload: null });
-                    console.error(err);
+                    global.log.error(err);
                     return;
                 }
                 res({ error: false, msg: "Node instance successfully started", payload: null });
@@ -52,7 +52,7 @@ function stopProcess(pid) {
         pm2.connect((err) => {
             if (err) {
                 res({ error: true, msg: "Cannot connect to pm2", payload: null });
-                console.error(err);
+                global.log.error(err);
                 pm2.disconnect();
                 return;
             }
@@ -60,7 +60,7 @@ function stopProcess(pid) {
                 pm2.disconnect();
                 if (err) {
                     res({ error: true, msg: "Cannot stop node server with pm2", payload: null });
-                    console.error(err);
+                    global.log.error(err);
                     return;
                 }
                 res({ error: false, msg: "Node server successfully stopped", payload: null });
@@ -77,7 +77,7 @@ function restartProcess(pid) {
         pm2.connect((err) => {
             if (err) {
                 res({ error: true, msg: "Cannot connect to pm2", payload: null });
-                console.error(err);
+                global.log.error(err);
                 pm2.disconnect();
                 return;
             }
@@ -85,7 +85,7 @@ function restartProcess(pid) {
                 pm2.disconnect();
                 if (err) {
                     res({ error: true, msg: "Cannot restart pm2 process", payload: null });
-                    console.error(err);
+                    global.log.error(err);
                     return;
                 }
                 res({ error: false, msg: "Node instance successfully restarted", payload: null });
@@ -99,7 +99,7 @@ function deleteProcess(pid) {
         pm2.connect((err) => {
             if (err) {
                 res({ error: true, msg: "Cannot connect to pm2", payload: null });
-                console.error(err);
+                global.log.error(err);
                 pm2.disconnect();
                 return;
             }
@@ -107,7 +107,7 @@ function deleteProcess(pid) {
                 pm2.disconnect();
                 if (err) {
                     res({ error: true, msg: "Cannot delete pm2 process", payload: null });
-                    console.error(err);
+                    global.log.error(err);
                     return;
                 }
                 res({ error: false, msg: "Process successfully deleted", payload: null });
@@ -123,7 +123,7 @@ function saveProcessList() {
 
     cmd.on("close", (code) => {
         if (code !== 0) {
-            console.error({ error: true, msg: `Error while executing the command: pm2 save`, payload: null });
+            global.log.error({ error: true, msg: `Error while executing the command: pm2 save`, payload: null });
             return;
         }
     });

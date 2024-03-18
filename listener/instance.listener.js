@@ -68,7 +68,7 @@ global.SE.on("instance:write", async (data, ack, id) => {
             updateInstance(data, id).then((res) => ack(res)).catch((err) => ack(err));
 
         }
-    }).catch((e) => console.error(e));
+    }).catch((e) => global.log.error(e));
 });
 
 global.SE.on("instance:action", async (data, ack) => {

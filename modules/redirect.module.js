@@ -1,14 +1,15 @@
 import { addOrUpdateDomain } from '../utils/acme.js';
-import { isEqual, deepCopy } from '../helper/object.helper.js';
-
+import { deepCopy } from '../helper/object.helper.js';
+import { v4 as uuidv4 } from 'uuid';
 function createRedirect(data, id) {
     return new Promise((res, rej) => {
-        //insert new entity
+        // *** INSERT NEW ENTITY ***
+        data._id = uuidv4();
         global.ENTITIES.insertOne({ type: "redirect", ...data });
-        //create ssl cert
+        // *** CREATE SSL CERT ***
         addOrUpdateDomain(data.network.sub, data.network.domain).catch(err => {
-            global.IO.to(id).emit("msg:get", err);
-            console.error(err);
+            global.emitToAllServers(id, "msg:get", err)
+            global.log.error(err);
         });
 
         res({ error: false, msg: "Redirect created", payload: null });
@@ -18,7 +19,7 @@ function createRedirect(data, id) {
 function updateRedirect(data, id) {
     return new Promise((res, rej) => {
 
-        //save old entity
+        // *** SAVE OLD ENTITY ***
         let old = deepCopy(global.ENTITIES.findOne({ _id: data._id }));
 
         if (!old) {
@@ -26,14 +27,14 @@ function updateRedirect(data, id) {
             return;
         }
 
-        //update entity
+        // *** UPDATE ENTITY ***
         global.ENTITIES.updateOne({ _id: data._id }, { ...data });
 
-        //create ssl cert on network config change
+        // *** CREATE SSL CERT AND RELOAD PROXY ***
         if (data.network.sub !== old.network.sub || data.network.domain !== old.network.domain) {
             addOrUpdateDomain(data.network.sub, data.network.domain).catch(err => {
-                global.IO.to(id).emit("msg:get", err);
-                console.error(err);
+                global.emitToAllServers(id, "msg:get", err)
+                global.log.error(err);
             });
         }
 

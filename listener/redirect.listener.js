@@ -19,7 +19,6 @@ global.SE.on("redirect:write", async (data, ack, id) => {
         scopes = [nameIsUnused(name), domainIsUnused(network.sub, network.domain)];
     } else if (method == "UPDATE") {
         let old = global.ENTITIES.findOne({ _id });
-
         //name changed, add to scope
         if (old.name != name) scopes.push(nameIsUnused(name))
         //(sub)domain changed, add to scope
@@ -49,7 +48,7 @@ global.SE.on("redirect:write", async (data, ack, id) => {
             updateRedirect(data, id).then((res) => ack(res)).catch((err) => ack(err));
 
         }
-    }).catch((e) => console.error(e));
+    }).catch((e) => global.log.error(e));
 });
 
 global.SE.on("redirect:list", (ack) => {

@@ -5,7 +5,7 @@ import { cloneRepo, pullRepo } from "../utils/git.js";
 import { runCmd } from '../utils/cmd.js';
 
 import { wait } from "../helper/wait.helper.js";
-import { getPackageJSON } from '../helper/instance.helper.js';
+import { getPackageJSON, checkAndInstallModules } from '../helper/instance.helper.js';
 import { isEqual, deepCopy } from '../helper/object.helper.js';
 
 import { restartProcess, createProcess, stopProcess, deleteProcess } from '../utils/pm2.js';
@@ -17,7 +17,8 @@ async function createInstance(data, id) {
 
         //create uuid, ´cause
         data._id = uuidv4();
-
+        global.logInteractive.await('[%d/7] start - create instance', 1)
+        global.logInteractive.await('[%d/7] git clone - create instance', 2)
         //clone git repo
         let clone = await cloneRepo(data.git, data._id);
         if (clone.error) {
@@ -36,18 +37,19 @@ async function createInstance(data, id) {
             //interrupt creation process
             return;
         }
-
+        global.logInteractive.await('[%d/7] npm install - create instance', 3)
+        await checkAndInstallModules(data)
+        
         data.script = data.script || packageJSON.payload.main;
         data.version = packageJSON.payload.version;
         data.pm2CreationDone = false;
-
-
+        global.logInteractive.await('[%d/7] save instance data - create instance', 4)
         //insert new entity
         global.ENTITIES.insertOne({ type: "instance", ...data });
 
         //delete empty CMDs
         data.cmd = data.cmd.filter(f => f.replace(/ /g, "").length != 0);
-
+        global.logInteractive.await('[%d/7] run cmds - create instance', 5)
         //run start CMDs (async)
         Promise.allSettled(data.cmd.map(m => runCmd(data, m)))
             .then((res) => {
@@ -56,20 +58,21 @@ async function createInstance(data, id) {
                 if (errs.length) {
                     let msgs = errs.map(m => m.msg);
                     errs[0].msg = msgs;
-                    global.IO.to(id).emit("msg:get", errs[0]);
+                    global.emitToAllServers(id, "msg:get", errs[0])
                 }
             });
 
-        console.log(data);
-
+            global.log.debug(data);
+            global.logInteractive.await('[%d/7] create ssl certificates - create instance', 6)
         //create ssl certificates
         if (data.network.isAccessable) {
             addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain).catch(err => {
-                global.IO.to(id).emit("msg:get", err);
-                console.error(err);
+                global.emitToAllServers(id, "msg:get", err)
+                global.log.error(err);
+                global.log2File.error(err)
             });
         }
-
+        global.logInteractive.success('[%d/7] done - create instance', 7)
         res({ error: false, msg: `Instance successfully created` });
     });
 }
@@ -90,8 +93,8 @@ function updateInstance(data, id) {
         //create ssl cert on network config change
         if (data.network.isAccessable && data.network.redirect.sub !== old.network.redirect.sub || data.network.redirect.domain !== old.network.redirect.domain) {
             addOrUpdateDomain(data.network.redirect.sub, data.network.redirect.domain).catch(err => {
-                global.IO.to(id).emit("msg:get", err);
-                console.error(err);
+                global.emitToAllServers(id, "msg:get", err)
+                global.log.error(err);
             });
         }
 
@@ -108,7 +111,7 @@ function updateInstance(data, id) {
                     if (errs.length) {
                         let msgs = errs.map(m => m.msg);
                         errs[0].msg = msgs;
-                        global.IO.to(id).emit("msg:get", errs[0]);
+                        global.emitToAllServers(id, "msg:get", errs[0])
                     }
                 });
         }
@@ -120,7 +123,7 @@ function updateInstance(data, id) {
             || data.network.redirect.port !== old.network.redirect.port) {
             runInstanceAction({ _id: data._id, status: 1 }).then(() => {
             }).catch((err) => {
-                global.IO.to(id).emit("msg:get", err);
+                global.emitToAllServers(id, "msg:get", err)
             });
         }
 
@@ -154,12 +157,14 @@ async function runInstanceAction(data) {
                 acc[key] = value;
                 return acc;
             }, {});
-
             //set port if instance is accessable
             if (instance.network.isAccessable) {
                 env["PORT"] = instance.network.redirect.port;
             }
-
+            global.log.debug({
+                cwd: `${path}/${instance._id}/`, script: instance.script, name: instance._id, env,
+                output: `${path}/${instance._id}/${instance._id}.log`, error: `${path}/${instance._id}/${instance._id}.log`
+            })
             let creation = await createProcess({
                 cwd: `${path}/${instance._id}/`, script: instance.script, name: instance._id, env,
                 output: `${path}/${instance._id}/${instance._id}.log`, error: `${path}/${instance._id}/${instance._id}.log`

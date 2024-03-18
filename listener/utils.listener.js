@@ -89,8 +89,9 @@ global.SE.on("proxy:set", async (data, ack) => {
 
 global.SE.on("proxy:updateCerts", async (data, ack, id) => {
     updateDomainCerts(data.force).catch((err) => {
-        global.IO.to(id).emit("msg:get", err);
-        console.error(err);
+        global.emitToAllServers(id, "msg:get", err)
+        global.log2File.error(err)
+        global.log.error(err);
     });
     ack({ error: false, msg: "Cert-Update triggered", payload: null});
 });
@@ -168,4 +169,8 @@ global.SE.on("tags:delete", async (data, ack) => {
     global.CONFIG.updateOne({ entity: "tags" }, { value: tags.filter(f => f !== data.tag) });
 
     ack({ error: false, msg: "Tag deleted", payload: null });
+});
+
+global.SE.on("notifications:get", async (ack) => {
+    ack({ error: false, msg: "Fetched notifications", payload: global.stickyNotification.queue });
 });

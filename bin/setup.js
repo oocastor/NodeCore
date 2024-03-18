@@ -13,7 +13,7 @@ if (!global.CONFIG.findOne({ entity: "firstSetupDone" })) {
     global.CONFIG.insertOne({ entity: "sysInfoUpdateInterval", value: 2000 });
     global.CONFIG.insertOne({ entity: "proxy", value: { enabled: false, subscriberEmail: "", cluster: false, workers: 1, pid: "" } });
     global.CONFIG.insertOne({ entity: "tags", value: []});
-
+    global.CONFIG.insertOne({ entity: "tracking", value: {enabled: true, anonymizeIP: true, saveDays: 7}});
     global.CONFIG.insertOne({ entity: "firstSetupDone", value: true });
 
     // *** CREATE INIT LOGIN  ***
